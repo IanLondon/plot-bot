@@ -1,0 +1,95 @@
+WALL ROBOT PROJECT SHEET
+
+Two identical stepper motors attached to spools.
+Monofilament lines suspend "gondola"
+
+Test winch vs counterweight+capstan. Winch is simpler, preferred.
+Large diameter, wide spools minimize error that you get from "snowballing" as you take up 
+
+Gondola v0 is just a binder clip that holds a dry erase marker.
+
+The working gondola will have ability to erase, possibly by shifting a weight and 'teetering' across the arm it uses to steady itself on the board.
+
+* * * * *
+
+WHAT WORK CAN I DO WITHOUT HAVING THE MOTORS?
+
+-Make the "pusher arm pen" with tortillon in ballpoint pen:
+  * http://monologues.co.uk/Portraits/Tortillon.htm
+  *The mechanism in a retractable ball point pen is a "bistable cam"
+
+-Design the gondola mount + pens + solenoids
+
+-Figure out solenoid parts: what type of wire? how many turns? magnet?
+
+-Figure out the software. Pretend you have the steppers already and write the program. There is a lot of coding to learn!
+
+-Design the calibration system. Research what other people have done
+
+* * * * *
+
+HOW CAN I MOUNT A PULLEY TO THE STEPPER MOTOR?
+This guy taps out his own set screws from 1/4" plastic tubing
+  https://www.youtube.com/watch?v=LIiFWMzpeks
+
+You can also use a dremel collet & nut, but I'm not sure how.
+I guess you can attach the nut to anything with liquid steel etc.
+
+There are $6/ea universal mounting hubs from Pololu, but I can figure something better out.
+* * * * *
+
+Markers will dry out, so plan to use retractable markers.
+You could "click" the retractable markers with solenoids:
+http://hackaday.com/2010/12/02/make-your-own-solenoids-then-play-the-xylophone/
+Remember the inside of the solenoid has a stronger field than the rest.
+A solenoid is actuated like a motor: just use a transistor, with a flyback diode (even a MOSFET needs one!)
+
+NEUTRAL MODE (aka "don't draw don't erase")
+-If you use retractable markers, with each one "clicked" by a solenoid, you don't need a "pusher arm" and can just let the retracted markers drag across the board. 
+-But, they might scratch up the board, and they will probably wipe away the drawing and mess it up as the gondola moves around.
+*Instead, make a retractable "pusher arm pen" - take the ink cartridge out of a normal ballpoint pen, and put something like a tortillon in there (rolled paper)
+
+
+PROGRAMMING REQUIREMENTS:
+-Translate vectors or g-code to X,Y coordinates
+-Translate X,Y coordinates to stepper controls (function moveGondolaTo(x,y) )
+-Toggle 4 solenoids to toggle 4 color markers (only one color should be on at a time btw, their state needs to be tracked in code. A function like changeColor(COLOR_RED) will change the color, you shouldn't control it manually.)
+-Handle x,y offset of each color, they're going to be in a row or square.
+-Toggle eraser (need to decide mechanism)
+-Calibrate position (read some physical marker at the (0,0) origin? With "reference guideline" on x=0 vertical line?)
+-See below for the "exposed" functions, which will act like the ESPwifi+Arduino functions I'll make later.
+-Beep on error with calibration or ignored color change command (invalid mode, you can only change color in "don't draw don't erase" mode.
+
+I want to first control everything via Firmata, and make sure everything works in this simplified version with high-level code.
+Then I want to set up the ESP wifi chip and make the arduino responsive to that. Eventually, I'd like to make the arduino be able to track its position itself, and track its marker color (only one color at a time), and only receive:
+
+EXPOSED FUNCTIONS
+  "draw lines: (x1,y1,...,xn,yn)" <- from "don't draw don't erase" mode, move to x1,y1 then put down marker ="drawing mode", then move to x2,y2, then move to x3,y3, ... finally once at the last point retract marker to end at "don't draw don't erase" mode.
+
+  "set marker color: RED" <- sets the marker color, which is a state. You can only set marker color in "don't draw don't erase" mode, otherwise it will complain. The program uses the marker state to determing what solenoid to use when toggling the marker. The program also uses the marker state to
+
+  "erase: (x1,y1,...,xn,yn)" just like the draw lines function. Starts and ends in "dont' draw don't erase" mode, erasing in the middle.
+
+NEED TO LEARN/RESEARCH:
+push-type solenoid design, part selection
+johnny-five
+stepper motor selection
+stepper motor control w/ EasyDriver
+getting text and vectors to cartesian (x,y) points
+calibration options
+ESP wifi chip
+
+
+BUY LIST:
+-Retractable dry erase markers (4-pack)
+-Two twin stepper motors (what specs do I need?)
+
+Once you design solenoids:
+-Magnet wire for solenoids
+-Paper or plastic tube (must be non-magnetic)
+-Metal cylinder for plunger (from a nail? the nail head can keep it from shooting out forward)
+-See the push-type cutaway diagram here, note how plunger needs to stick out a lot, then end of its stroke is near the center of the solenoid:
+  http://www.gwlisk.com/design-guide.aspx
+-Possible small rare earth magnets. If you put a permanent magnet on top of the solenoid coil, and attach it to the plunger, the energized coil will repel the magnet, pushing the pluger harder with less current. See http://youtu.be/sR3xmof8rZY?t=6m20s
+
+*HAHAHA JUST TAKE THE WIRE FROM THE MICROWAVE TRANSFORMER

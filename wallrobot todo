@@ -1,0 +1,52 @@
+TODO
+
+JOHNNY-FIVE SCRIPT
+wallBot.js -- A johnny-five script is given the diameter and width btw spools (as argv flags: `node wallBot.js -w 24234 -d 123`), and then uses this to calculate the steps needed to reach different positions.
+
+STEPS AND UNITS
+*The primitive unit is STEPS per string, from origin position. X,Y coords are an abstraction, but the real-life measurement must be string length from motor shaft to marker point per step. If you tried to work in INTEGER x,y coords in mm, or INTEGER string length IN MM, there would be increasing inaccuracy as you move around due to rounding errors, etc. But you must work in integer step number, because they are absolute (tho if you do microstepping the integer step length changes).
+*Ok, so once we are careful to track integer step number per string, we can easily convert to:
+  string length: with length(in mm) per step * steps past origin
+  x,y coords: with trig and string length
+
+ORIGIN:
+*(0,0) is the top left corner of the drawing area.
+*At the end of a drawing, the bot must move the marker to the origin.
+*If the bot crashes, or if the origin has moved (different setup, etc), the user must manually move the marker to the origin before drawing.
+
+MOVING AROUND
+So if we input a new step delta (the number of steps from origin position), we know how many steps to take on each motor to get there.
+If we input a new string length (left_string, right_string) in mm, or a new (x,y) position in mm, we can figure out the closest step delta that represents and then move to it.
+
+But -- what path do we take to move to it?
+
+1. We can turn the steppers both at once, at speeds such that they'll reach the end point at the same time. For example, if A has a delta of 100 and B has a delta of 10, A will move at max_rpm and B will move at max_rpm*(10/100). (TODO- Do rpms have to be integers??? what is their resolution? rounding errors may mess things up.)
+TODO: TEST THIS CONCEPT WITH bot &/or wallBotViewer.html
+
+2. We can compute a line:
+TODO: see http://en.wikipedia.org/wiki/Line_drawing_algorithm
+
+3. Or we can designate one motor as the radius-control and the other as the angle-control and draw with polar coordinates.
+* * * * *
+
+HARDWARE
+-Secure the wires from stepper better - cool stepper wire popped out with vibration!
+
+-Figure out how to hold steppers in place on the ground without bolting anything: hold with a weight?
+
+-How well do thumb tacks work as pulleys for string?
+
+* * * * *
+
+GRAPHICS
+-Figure out how to get raster to svg to either x,y coordinates or to gcode
+http://potrace.sourceforge.net/
+
+
+-Simulate all movements in <canvas> in browser! This will be an important debug tool later when things get complicated. Make a simple client html file with embedded js - wallBotViewer.html - which receives "step commands" from node server over websocket and draws them as they're received by doing trig for the string lengths. You gotta make sure it can keep up with all the data it gets sent, it can't miss any pixels.
+
+* * * * *
+
+UNIT TESTING
+
+Learn it, figure out how to do it!

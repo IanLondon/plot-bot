@@ -1,0 +1,28 @@
+{
+  "name": "drawCanvas",
+  "main": "drawCanvas.html",
+  "version": "0.0.0",
+  "authors": [
+    "hail-seitan <ianlondondu@gmail.com>"
+  ],
+  "description": "emulates the wallrobot in <canvas>",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "nodebot",
+    "canvas",
+    "drawing"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "victor": "~0.2.6"
+  }
+}
