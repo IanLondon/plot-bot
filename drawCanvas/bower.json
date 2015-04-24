@@ -23,6 +23,7 @@
     "tests"
   ],
   "dependencies": {
-    "victor": "~0.2.6"
+    "victor": "~0.2.6",
+    "lodash": "~3.7.0"
   }
 }
