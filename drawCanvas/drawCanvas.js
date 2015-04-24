@@ -22,6 +22,8 @@ var WallRobot = function(opts) {
   this.DRAW_AREA_WIDTH = opts.DRAW_AREA_WIDTH;
   this.DRAW_AREA_HEIGHT = opts.DRAW_AREA_HEIGHT;
 
+  this.STRING_LEN_PER_STEP = opts.STRING_LEN_PER_STEP;
+
   //steps for left and right stepper, from origin position.
   this.steps = [0,0];
 
@@ -35,7 +37,7 @@ var WallRobot = function(opts) {
   // P   Marker Position
 
   this.o_p = new Victor(0, 0);
-  this.L_R = new Victor(0, this.MOTOR_SIDE_OFFSET*2 + this.DRAW_AREA_WIDTH); //horizontal dist btw steppers
+  this.L_R = new Victor(this.MOTOR_SIDE_OFFSET*2 + this.DRAW_AREA_WIDTH, 0); //horizontal dist btw steppers
 
   // Assume that both steppers have the same y-axis displacement from
   // their side of the drawing area.
@@ -45,15 +47,41 @@ var WallRobot = function(opts) {
   //The marker starts at (0,0) so L_O = l_p
   this.l_p = this.L_O.clone();
 
+  //calculate r_p
+  this.r_p = new Victor(this.L_R.x - this.l_p.x, this.l_p.y);
+
+  this.update = function() {
+    //TODO: update all vectors based on steps.
+    throw new Error ("not implemented. TODO.")
+  }
+
   this.sanityCheck = function () {
-    _.forEach([MOTOR_SIDE_OFFSET, MOTOR_HEIGHT, DRAW_AREA_WIDTH, DRAW_AREA_HEIGHT], function(param) {
-      if (! this[param] > 0) {
+    //Make sure constants make sense.
+    _.forEach([
+      "MOTOR_SIDE_OFFSET",
+      "MOTOR_HEIGHT",
+      "DRAW_AREA_WIDTH",
+      "DRAW_AREA_HEIGHT"],
+      function(param) {
+
+      if (!(this[param] > 0)) {
         throw new Error(
           param + " must be > 0."
         );
       }
-    });
+    }, this);
+
+    if(this.L_R.y !== 0) {
+      throw new Error("L_R should not have a horizontal component.");
+    }
+
+    if(this.l_p.y !== this.r_p.y) {
+      throw new Error("l_p and r_p should have the same y value.")
+    }
   }
+
+  //do a sanity check on init
+  this.sanityCheck();
 };
 
 
@@ -82,5 +110,6 @@ var robot = new WallRobot({
   MOTOR_SIDE_OFFSET: Convert.ft_mm(2),
   MOTOR_HEIGHT: Convert.ft_mm(2),
   DRAW_AREA_WIDTH: Convert.ft_mm(8),
-  DRAW_AREA_HEIGHT: Convert.ft_mm(4)
+  DRAW_AREA_HEIGHT: Convert.ft_mm(4),
+  STRING_LEN_PER_STEP: 1.5 //??? dunno! TODO measure.
 });
