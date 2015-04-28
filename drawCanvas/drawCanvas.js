@@ -13,6 +13,11 @@ var Convert = {
 var WallRobot = function(opts) {
   //all working units are in MM! MM is "native".
 
+  // stepperDelta tracks steps from the origin position.
+  // Negative values retract the string, positive values extend the string
+  // stepperDelta[0] is left stepper, and stepperDelta[1] is right stepper.
+  this.stepperDelta = [0, 0];
+
   // horizontal distance from motors to side of board in mm
   this.MOTOR_SIDE_OFFSET = opts.MOTOR_SIDE_OFFSET;
 
@@ -24,49 +29,32 @@ var WallRobot = function(opts) {
 
   this.STRING_LEN_PER_STEP = opts.STRING_LEN_PER_STEP;
 
-  // Right now displacement vectors are named like l_p meaning point L to point P.
-  // CONSTANT vectors are uppercase and variable vectors are lowercase.
-  //
-  // **** VECTOR SYMBOL KEY ****
-  // L   Left Stepper Rotor position
-  // R   Right Stepper Rotor position
-  // O   Origin of drawing area, where (x,y) = (0,0)
-  // P   Marker Position
+  this.vectorLen = function(x, y) {
+    return Math.sqrt( Math.pow(x,2) + Math.pow(y,2) );
+  };
 
-  // this.o_p = new Victor(0, 0);
-  this.L_R = new Victor(this.MOTOR_SIDE_OFFSET*2 + this.DRAW_AREA_WIDTH, 0); //horizontal dist btw steppers
+  // Derivative values:
+  this.INITIAL_STR_LEN_LEFT = this.vectorLen(this.MOTOR_SIDE_OFFSET, this.MOTOR_HEIGHT);
+  this.INITIAL_STR_LEN_RIGHT = this.vectorLen(this.MOTOR_SIDE_OFFSET + this.DRAW_AREA_WIDTH, this.MOTOR_HEIGHT);
 
-  // Assume that both steppers have the same y-axis displacement from
-  // their side of the drawing area.
-  // IE, they should be horizontally centered.
-  this.L_O = new Victor(this.MOTOR_SIDE_OFFSET, this.MOTOR_HEIGHT);
+  this.MOTOR_TO_MOTOR_DIST = this.DRAW_AREA_WIDTH + 2*this.MOTOR_SIDE_OFFSET;
 
-  //The marker starts at (0,0) so L_O = l_p
-  this.l_p = this.L_O.clone();
+  this.initSanityCheck = function () {
+    // Make sure all the constants are sane and consistent.
 
-  // TODO SOON use a getter instead, this is an ugly hack!!!
-  this.get_r_p = function() { return new Victor(this.l_p.x - this.L_R.x, this.l_p.y);};
-  // calculate r_p
-  this.r_p = this.get_r_p();
-
-  // TODO SOON same hack ugh
-  this.get_o_p = function() { return this.l_p.clone().subtract(this.L_O); };
-  this.o_p = this.get_o_p();
-
-  //initialize string lengths
-  this.string_len_left = this.l_p.length();
-  this.string_len_right = this.r_p.length();
-
-
-  this.sanityCheck = function () {
-    var TOLERANCE_AMT = 0.00000000001; //allow for rounding errors
+    //allow for rounding errors and general JS floating point errors
+    var TOLERANCE_AMT = 0.00000000001;
 
     //constant scalars that should be > 0
     _.forEach([
       "MOTOR_SIDE_OFFSET",
       "MOTOR_HEIGHT",
       "DRAW_AREA_WIDTH",
-      "DRAW_AREA_HEIGHT"],
+      "DRAW_AREA_HEIGHT",
+      "INITIAL_STR_LEN_LEFT",
+      "INITIAL_STR_LEN_RIGHT",
+      "MOTOR_TO_MOTOR_DIST"
+      ],
       function(param) {
 
       if (this[param] <= 0) {
@@ -76,65 +64,129 @@ var WallRobot = function(opts) {
       }
     }, this);
 
-    //vectors that should always be positive in both components:
-    _.forEach([
-      "L_R",
-      "L_O",
-      "l_p",
-      "o_p"],
-      function(vect){
+  };
 
-      if (this[vect].x < 0 || this[vect].y < 0) {
-        throw new Error(vect + " should be positive in both components");
-      }
+  // Call for sanity check upon initialization
+  this.initSanityCheck();
+};
 
-    }, this);
+    // //vectors that should always be positive in both components:
+    // _.forEach([
+    //   "L_R",
+    //   "L_O",
+    //   "l_p",
+    //   "o_p"],
+    //   function(vect){
+    //
+    //   if (this[vect].x < 0 || this[vect].y < 0) {
+    //     throw new Error(vect + " should be positive in both components");
+    //   }
+    //
+    // }, this);
 
     //r_p is the only vector that should always have a <= 0 x component
-    if(this.r_p.x > 0) {
-      throw new Error("r_p should not have an x component > 0");
-    }
+  //   if(this.r_p.x > 0) {
+  //     throw new Error("r_p should not have an x component > 0");
+  //   }
+  //
+  //   if(this.L_R.y !== 0) {
+  //     throw new Error("L_R should not have a horizontal component.");
+  //   }
+  //
+  //   if(this.l_p.y !== this.r_p.y) {
+  //     throw new Error("l_p and r_p should have the same y value.");
+  //   }
+  //
+  //   if(Math.abs(this.l_p.length() - this.string_len_left) > TOLERANCE_AMT) {
+  //     throw new Error("l_p's length should ~equal string_len_left.");
+  //   }
+  //
+  //   if(Math.abs(this.r_p.length() - this.string_len_right) > TOLERANCE_AMT) {
+  //   throw new Error("r_p's length should ~equal string_len_right.");
+  //   }
+  //
 
-    if(this.L_R.y !== 0) {
-      throw new Error("L_R should not have a horizontal component.");
-    }
 
-    if(this.l_p.y !== this.r_p.y) {
-      throw new Error("l_p and r_p should have the same y value.");
-    }
-
-    if(Math.abs(this.l_p.length() - this.string_len_left) > TOLERANCE_AMT) {
-      throw new Error("l_p's length should ~equal string_len_left.");
-    }
-
-    if(Math.abs(this.r_p.length() - this.string_len_right) > TOLERANCE_AMT) {
-    throw new Error("r_p's length should ~equal string_len_right.");
-    }
-
-  };
-
-  this.update = function() {
-    //Use string length values to update everything else,
-    //then do a sanityCheck and lastly drawToBoard.
-    this.l_p.x = (( Math.pow(this.string_len_left,2) - Math.pow(this.string_len_right,2) +
-       Math.pow(this.L_R.x,2) ) / (2 * this.L_R.x) );
-
-    this.l_p.y = Math.sqrt(Math.pow(this.string_len_left, 2) - Math.pow(this.l_p.x, 2) );
-
-    this.o_p = this.get_o_p();
-
-    //recalculate r_p
-    // this.r_p = new Victor(this.l_p.x - this.L_R.x, this.l_p.y);
-    this.r_p = this.get_r_p();
-
-    this.sanityCheck();
-    drawToBoard(this.o_p.x,this.o_p.y);
-  };
+  // this.update = function() {
+  //   // //Use string length values to update everything else,
+  //   // //then do a sanityCheck and lastly drawToBoard.
+  //   // this.l_p.x = (( Math.pow(this.string_len_left,2) - Math.pow(this.string_len_right,2) +
+  //   //    Math.pow(this.L_R.x,2) ) / (2 * this.L_R.x) );
+  //   //
+  //   // this.l_p.y = Math.sqrt(Math.pow(this.string_len_left, 2) - Math.pow(this.l_p.x, 2) );
+  //   //
+  //   // this.o_p = this.get_o_p();
+  //   //
+  //   // //recalculate r_p
+  //   // // this.r_p = new Victor(this.l_p.x - this.L_R.x, this.l_p.y);
+  //   // this.r_p = this.get_r_p();
+  //
+  //   this.checkPosition();
+  //   drawToBoard(this.x, this.y);
+  // };
 
 
   //do a sanity check on init of new WallRobot
-  this.sanityCheck();
+
+
+// Getters (and setters, if you make any)
+Object.defineProperties(WallRobot.prototype, {
+
+  string_len_left : {
+    get: function() {
+      return this.stepperDelta[0]*this.STRING_LEN_PER_STEP + this.INITIAL_STR_LEN_LEFT;
+    }
+  },
+
+  string_len_right : {
+    get: function() {
+      return this.stepperDelta[1]*this.STRING_LEN_PER_STEP + this.INITIAL_STR_LEN_RIGHT;
+    }
+  },
+
+  x : {
+    get: function() {
+      return (( Math.pow(this.string_len_left,2) - Math.pow(this.string_len_right,2) +
+        Math.pow(this.MOTOR_TO_MOTOR_DIST,2) ) / (2 * this.MOTOR_TO_MOTOR_DIST) );
+    }
+  },
+
+  y : {
+    get: function() {
+      //TODO: this can probably be more efficient (not calling x.get()...)
+      return Math.sqrt(Math.pow(this.string_len_left, 2) - Math.pow(this.x, 2) );
+    }
+  },
+
+});
+
+// Rest of methods
+WallRobot.prototype.checkPosition = function(x, y) {
+  // You can pass x and y values if you want to test them without changing
+  // the stepDelta. If you don't specify, this.x and this.y are used,
+  // which are calculated using this.stepDelta
+  if (typeof(x)==='undefined') x = this.x;
+  if (typeof(y)==='undefined') y = this.y;
+
+  if (x < 0) { throw new Error("x should not be negative"); }
+  if (y < 0) { throw new Error("y should not be negative"); }
+  if (x > this.DRAW_AREA_WIDTH) { throw new Error("x should not be greater than DRAW_AREA_WIDTH"); }
+  if (y > this.DRAW_AREA_HEIGHT) { throw new Error("y should not be greater than DRAW_AREA_HEIGHT"); }
+
+  return true;
 };
+
+WallRobot.prototype.setDeltaByCoords = function(x, y) {
+  // TODO
+};
+
+WallRobot.prototype.setDeltaByLengths = function(left_len, right_len) {
+  // TODO
+};
+
+
+
+// ===============================================
 
 function drawToBoard(x, y) {
   // instead of calling setPixel directly, this is kind of a hook.
@@ -180,5 +232,5 @@ var robot = new WallRobot({
 //test update and draw!
 for(var i = 0; i < 500; i++) {
   robot.string_len_right += robot.STRING_LEN_PER_STEP;
-  robot.update();
+  // robot.update();
 }
