@@ -191,21 +191,23 @@ WallRobot.prototype.drawToBoard = function () {
   // later I will implement colors etc
 
   //round off floating point values so you can plot them
-  x = Math.round(this.x);
-  y = Math.round(this.y);
-  setPixel(imageData, x, y, 255, 0, 0, 255);
-  //console.log("drew to board (" + x + "," + y + ").");
-  context.putImageData(imageData, 0,0);
+  var x = Math.round(this.x);
+  var y = Math.round(this.y);
+  setPixel(imageData, x, y, 0, 0, 0, 255);
+  // console.log(x + ", " + y);
+  // console.log("THIS XY:" + this.x + "," + this.y);
+  // console.log("this str_len:" + this.string_len_left + ", " + this.string_len_right);
+
+  //context.putImageData(imageData, 0,0);
 };
 
 WallRobot.prototype.gotoStepDelta = function (maxSpeed) {
   // actuate the steppers here, or at least simulate it
 
-  throw new Error("broken fn. TODO.")
-
   if (typeof(this.nextStepDelta) === 'undefined') {
     throw new Error("No next step! nextStepDelta is undefined.");
   }
+
   if (typeof(maxSpeed) === 'undefined') { maxSpeed  = this.DEFAULT_SPEED; }
 
   var left_steps = this.nextStepDelta[0] - this.stepDelta[0];
@@ -219,12 +221,15 @@ WallRobot.prototype.gotoStepDelta = function (maxSpeed) {
   var fastDir;
   var slowDir;
 
-  if (left_steps > 0 || right_steps > 0) {
-    if (left_steps > right_steps) {
+  console.log({left_steps: left_steps, right_steps: right_steps});
+
+  if (left_steps !== 0 || right_steps !== 0) {
+    if (Math.abs(left_steps) > Math.abs(right_steps) ) {
       // left_stepper has more steps to make, so it moves at the given speed
       // while right_stepper moves at a fraction of that speed
       // so they both finish at the same time, hopefully!
 
+      console.log("left stepper is fast!");
       fastIndex = 0;
       slowIndex = 1;
       fast_steps = left_steps;
@@ -236,6 +241,8 @@ WallRobot.prototype.gotoStepDelta = function (maxSpeed) {
     } else {
       //visa versa, since right_steps > left_steps
 
+
+      console.log("right stepper is fast!");
       fastIndex = 1;
       slowIndex = 0;
       fast_steps = right_steps;
@@ -249,22 +256,44 @@ WallRobot.prototype.gotoStepDelta = function (maxSpeed) {
     slowDir = slow_steps > 1 ? 1 : -1;
     fastDir = fast_steps > 1 ? 1 : -1;
 
-    slowTimerId = window.setInterval( function () {
-      this.stepDelta[slowIndex] += slowDir;
-    }.bind(this), maxSpeed*slow_steps/fast_steps);
+    var stepCount = 0;
 
-    fastTimerId = window.setInterval( function () {
+    var stepSlow = function() {
+      this.stepDelta[slowIndex] += slowDir;
+       console.log("boop, slow. Stepcount: " + stepCount );
+    };
+
+
+    var stepFast = function() {
+      // console.log(stepCount + " is count");
+
       this.stepDelta[fastIndex] += fastDir;
+      // console.log("modulous: slow=" + slow_steps + ", fast=" + fast_steps + ". " + ((slow_steps*stepCount) % fast_steps ) );
+      // if ((stepCount !==0 && Error("modulus doesn't work b/c the division isn't clean. Eg -34/143, how do you work that??")) {
+      //   console.log("sloooow");
+      //   this.stepDelta[slowIndex] += slowDir;
+      // }
+
+      this.drawToBoard();
+      // console.log("beep, fast");
+      context.putImageData(imageData, 0,0);
+
       if (this.stepDelta[fastIndex] === this.nextStepDelta[fastIndex]) {
         console.log("done stepping to new delta!");
         window.clearInterval(slowTimerId);
         window.clearInterval(fastTimerId);
+        context.putImageData(imageData, 0,0);
 
         // update the stepDelta to its new position
         this.stepDelta = this.nextStepDelta.slice();
       }
-      this.drawToBoard();
-    }.bind(this), maxSpeed);
+
+      stepCount += 1;
+    };
+
+    slowTimerId = window.setInterval( stepSlow.bind(this), maxSpeed*Math.abs(fast_steps/slow_steps));
+
+    fastTimerId = window.setInterval( stepFast.bind(this), maxSpeed);
   } else {
     console.log("Didn't move, nextStepDelta is the same as current stepDelta.");
   }
