@@ -19,7 +19,7 @@ function isInt(value) {
 function step(stepsLeft, stepsRight) {
   //steps is positive -> extend string
   //steps is negative -> retract string
-  var substepResolution = 2;
+  var substepResolution = 4; //for spotty dotty trace, use 2.
   var deltaDiff = [];
 
   if (!isInt(stepsLeft) || !isInt(stepsRight)) {
@@ -36,7 +36,6 @@ function step(stepsLeft, stepsRight) {
 
   // Draw the sampled points across the displacement
   var coords;
-  var substeps = [];
 
   context.strokeStyle = "rgba(255,0,0,0.5)";
 
@@ -46,34 +45,15 @@ function step(stepsLeft, stepsRight) {
   var biggestDiff = Math.abs(deltaDiff[0]) > Math.abs(deltaDiff[1]) ? Math.abs(deltaDiff[0]) : Math.abs(deltaDiff[1]);
   var totalSubsteps = biggestDiff*substepResolution;
 
-  //The sign of the displacement.
-  var stepDirections = _.map(deltaDiff,function(val){
-    if (val > 0) {
-      return 1;
-    } else if (val < 0) {
-      return -1;
-    } else {
-      return 0;
-    }
-  });
-
   function subStepMap(substep_i, index) {
-      // console.log({val:val,stepDirections:stepDirections,substep_i:substep_i,substepResolution:substepResolution});
-      // return prevDeltVal + stepDirections[index]*substep_i/substepResolution;
-      return prevStepDelta[index] + ((newStepDelta[index] - prevStepDelta[index]) * substep_i / totalSubsteps);
+    return prevStepDelta[index] + ((newStepDelta[index] - prevStepDelta[index]) * substep_i / totalSubsteps);
   }
 
   for (var substep_i = 0; substep_i < totalSubsteps; substep_i++) {
     // this should take the step directions as input, and draw a certain number
     // of points between those directions.
 
-    // throw new Error("step(10,-1) does not work right. id and fix the bug.");
-
-    // console.log("stepDirections: " + stepDirections);
-
     tempStepDelta = _.map([substep_i,substep_i], subStepMap);
-
-    console.log("tempStepDelta: " + tempStepDelta);
 
     coords = getCartesian(tempStepDelta);
     drawCircle(coords.x, coords.y, 1, 0, 2*Math.PI);
@@ -155,3 +135,7 @@ document.body.onkeydown = function(event){
     }
 
 };
+
+// so I don't have to keep typing this:
+step(20,0);
+step(27,-36);
