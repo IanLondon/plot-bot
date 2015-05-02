@@ -19,8 +19,6 @@ function isInt(value) {
 function step(stepsLeft, stepsRight) {
   //steps is positive -> extend string
   //steps is negative -> retract string
-  var substepResolution = 4; //for spotty dotty trace, use 2.
-  var deltaDiff = [];
 
   if (!isInt(stepsLeft) || !isInt(stepsRight)) {
     throw new Error("Steps must be an integer! Got " + stepsLeft + ", " + stepsRight);
@@ -34,8 +32,16 @@ function step(stepsLeft, stepsRight) {
 
   var newStepDelta = stepDelta.slice();
 
+  updateCursor();
+  drawSubsteps(prevStepDelta,newStepDelta);
+
+}
+
+function drawSubsteps(prevStepDelta,newStepDelta) {
   // Draw the sampled points across the displacement
   var coords;
+  var substepResolution = 4; //for spotty dotty trace, use 2.
+  var deltaDiff = [];
 
   context.strokeStyle = "rgba(255,0,0,0.5)";
 
@@ -58,8 +64,6 @@ function step(stepsLeft, stepsRight) {
     coords = getCartesian(tempStepDelta);
     drawCircle(coords.x, coords.y, 1, 0, 2*Math.PI);
   }
-
-  updateCursor();
 }
 
 function getCartesian(someStepDelta) {
