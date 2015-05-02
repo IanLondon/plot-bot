@@ -56,15 +56,22 @@ function step(stepsLeft, stepsRight) {
       return 0;
     }
   });
+
+  function subStepMap(substep_i, index) {
+      // console.log({val:val,stepDirections:stepDirections,substep_i:substep_i,substepResolution:substepResolution});
+      // return prevDeltVal + stepDirections[index]*substep_i/substepResolution;
+      return prevStepDelta[index] + ((newStepDelta[index] - prevStepDelta[index]) * substep_i / totalSubsteps);
+  }
+
   for (var substep_i = 0; substep_i < totalSubsteps; substep_i++) {
     // this should take the step directions as input, and draw a certain number
     // of points between those directions.
 
-    console.log("stepDirections: " + stepDirections);
+    // throw new Error("step(10,-1) does not work right. id and fix the bug.");
 
-    tempStepDelta = _.map(prevStepDelta, function(val, index) {
-      return val + stepDirections[index]*substep_i/substepResolution;
-    });
+    // console.log("stepDirections: " + stepDirections);
+
+    tempStepDelta = _.map([substep_i,substep_i], subStepMap);
 
     console.log("tempStepDelta: " + tempStepDelta);
 
