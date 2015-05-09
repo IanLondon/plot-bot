@@ -23,17 +23,6 @@ function isInt(value) {
   return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value));
 }
 
-function signOf(num) {
-  if (num >= 0) {
-    // positive (or zero)
-    return 1;
-  }
-  else {
-    // negative
-    return -1;
-  }
-}
-
 function intChunk(total, segments) {
   // Given a total value (integer) and a number of segments, build an array of integers
   // which are as close as possible to each other, which sum to the given total.
@@ -42,7 +31,7 @@ function intChunk(total, segments) {
 
   // This is useful when chunking steps to draw a line in a Bresenham-inspired way!
 
-  if (segments < 1 || !isInt(segments)) {
+  if (segments < 0 || !isInt(segments)) {
     throw new Error("intChunk needs 'segments' to be a positive integer. Got " + segments);
   }
 
@@ -78,38 +67,72 @@ function moveStraightTo(destDelta) {
   // to destDelta (destination): prefers to move both motors at once, and to
   // distribute the single-motor motions evenly along the path.
 
+  // TODO: Verify that the destDelta is an array of 2 integers, and that it is
+  // within the bounds of the drawing area.
+
   // TODO: Make another function that divides a cartesian line into samples,
   // Use plotBot.CARTESIAN_RESOLUTION to determine how many samples to make,
   // each sample is an arc where the endpoints are integer bipolar approximations
   // of the cartesian line.
 
-  var total_steps_left = Math.abs(destDelta[0]-stepDelta[0]);
-  var total_steps_right = Math.abs(destDelta[1]-stepDelta[1]);
+  var stepDisplacement, stepDirection;
+  var totalSteps, totalDualSteps, totalSingleSteps;
+  var primaryMvmt, secondaryMvmt;
 
-  // the below can be wrong, can't it? the sign of the dest delta
-  // isn't the sign of the destDelta-stepDelta...
-  var left_dir = signOf(destDelta[0]);
-  var right_dir = signOf(destDelta[1]);
-
-  var stepDiff = Math.abs(total_steps_left-total_steps_right);
-
-  "TODO: LOOK AT YOUR NOTES AND REWORK THIS"
-
-  var biggerSteps;
-  if (total_steps_left > total_steps_right) {
-    biggerSteps = total_steps_left;
-    stepBig = function() { step(left_dir,0); };
-  } else {
-    biggerSteps = total_steps_right;
-    stepBig = function() { step(0,right_dir); };
-  }
-  biggerSteps -= stepDiff;
-
-  var bigStepArray = intChunk(biggerSteps, stepDiff);
-
-  _.forEach(bigStepArray, function(bigSteps) {
-    _.times(bigSteps, stepBig);
+  stepDisplacement = _.map(stepDelta, function(currentVal,index) {
+    return destDelta[index] - currentVal;
   });
+
+  stepDirection = _.map(stepDisplacement, function(steps) {
+    if (steps < 0) return -1;
+    else if (steps > 0) return 1;
+    else return 0;
+  });
+
+  totalSteps = _.map(stepDisplacement, function(steps) {
+    return Math.abs(steps);
+  });
+
+  totalDualSteps = _.min(totalSteps);
+
+  totalSingleSteps = _.max(totalSteps) - totalDualSteps;
+
+  if (totalDualSteps === 0 || totalSingleSteps === 0) {
+    secondaryMvmt = [];
+    primaryMvmt = (totalDualSteps > totalSingleSteps) ? [totalDualSteps] : [totalSingleSteps];
+  }
+  else if (totalDualSteps < totalSingleSteps) {
+    secondaryMvmt = intChunk(totalDualSteps, totalDualSteps);
+    primaryMvmt = intChunk(totalSingleSteps, totalDualSteps+1);
+  } else {
+    secondaryMvmt = intChunk(totalSingleSteps, totalSingleSteps);
+    primaryMvmt = intChunk(totalDualSteps, totalSingleSteps+1);
+  }
+
+  console.log({primaryMvmt:primaryMvmt, secondaryMvmt:secondaryMvmt});
+
+  _.forEach(secondaryMvmt, function(val,index) {
+    TODO
+  });
+  // there's always one more movement chunk in primaryMvmt than in secondaryMvmt
+  // so make that last movement now:
+    STEP HERE
+
+  // var biggerSteps;
+  // if (total_steps_left > total_steps_right) {
+  //   biggerSteps = total_steps_left;
+  //   stepBig = function() { step(left_dir,0); };
+  // } else {
+  //   biggerSteps = total_steps_right;
+  //   stepBig = function() { step(0,right_dir); };
+  // }
+  // biggerSteps -= stepDiff;
+  //
+  // var bigStepArray = intChunk(biggerSteps, stepDiff);
+  //
+  // _.forEach(bigStepArray, function(bigSteps) {
+  //   _.times(bigSteps, stepBig);
+  // });
 
 }
 
@@ -312,7 +335,8 @@ document.body.onkeydown = function(event){
 };
 
 // test stuff
-// drawLine(100,100,300,300);
+// drawLine(100,100,300,400);
 stepDelta = [100,100];
-straightLineTo([300,300]);
+moveStraightTo([300,400]);
+// straightLineTo([300,400]);
 console.log(stepDelta);
