@@ -2,7 +2,14 @@ var canvas = document.getElementById("canvas1");
 var context = canvas.getContext("2d");
 var imageData = context.createImageData(canvas.width, canvas.height);
 
+// TODO: store all variables in the plotBot namespace
+var plotBot = {};
+
 var STEP_LEN = 10;
+
+// Cartesian resolution sets the granularity when approximating a straight line.
+plotBot.CARTESIAN_RESOLUTION = STEP_LEN;
+// I'm trying the resolution as the step length... will it work??
 
 // horizontal dist btw the 2 stepper motors.
 var WIDTH = canvas.width;
@@ -16,12 +23,109 @@ function isInt(value) {
   return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value));
 }
 
+function signOf(num) {
+  if (num >= 0) {
+    // positive (or zero)
+    return 1;
+  }
+  else {
+    // negative
+    return -1;
+  }
+}
+
+function intChunk(total, segments) {
+  // Given a total value (integer) and a number of segments, build an array of integers
+  // which are as close as possible to each other, which sum to the given total.
+  // Eg intChunk(20,8) --> [ 3, 3, 3, 3, 2, 2, 2, 2 ].
+  // Negative values for 'total' are fine -- all the elements will be negative
+
+  // This is useful when chunking steps to draw a line in a Bresenham-inspired way!
+
+  if (segments < 1 || !isInt(segments)) {
+    throw new Error("intChunk needs 'segments' to be a positive integer. Got " + segments);
+  }
+
+  if (total === 0 || !isInt(total)) {
+    throw new Error("intChunk needs nonzero integer 'total'. Got " + total);
+  }
+
+  // Create and populate chunkArray with minimum values
+  var chunkArray = [];
+  var isPositive = (total > 0);
+  // Math.floor rounds negative numbers up: -2.5 --> -3. So use Math.ceil for negatives.
+  var initialVal = isPositive ? Math.floor(total/segments) : Math.ceil(total/segments);
+  for (var i=0; i<segments; i++) {
+    chunkArray.push(initialVal);
+  }
+
+  // Go thru array incrementing each element by 1 (if positive) or -1 (if neg)
+  // until the sum of the array reaches the value or 'sum'.
+  var signedAdder = isPositive ? 1 : -1;
+  var runningSum = Math.abs(initialVal * segments);
+  var index = 0;
+  while (runningSum < Math.abs(total)) {
+    chunkArray[index] += signedAdder;
+    index = (index + 1 == segments) ? 0 : index + 1;
+    runningSum++;
+  }
+
+  return chunkArray;
+}
+
+function moveStraightTo(destDelta) {
+  // Negotiate a "symmetrical" path of step()'s to get from current stepDelta
+  // to destDelta (destination): prefers to move both motors at once, and to
+  // distribute the single-motor motions evenly along the path.
+
+  // TODO: Make another function that divides a cartesian line into samples,
+  // Use plotBot.CARTESIAN_RESOLUTION to determine how many samples to make,
+  // each sample is an arc where the endpoints are integer bipolar approximations
+  // of the cartesian line.
+
+  var total_steps_left = Math.abs(destDelta[0]-stepDelta[0]);
+  var total_steps_right = Math.abs(destDelta[1]-stepDelta[1]);
+
+  // the below can be wrong, can't it? the sign of the dest delta
+  // isn't the sign of the destDelta-stepDelta...
+  var left_dir = signOf(destDelta[0]);
+  var right_dir = signOf(destDelta[1]);
+
+  var stepDiff = Math.abs(total_steps_left-total_steps_right);
+
+  "TODO: LOOK AT YOUR NOTES AND REWORK THIS"
+
+  var biggerSteps;
+  if (total_steps_left > total_steps_right) {
+    biggerSteps = total_steps_left;
+    stepBig = function() { step(left_dir,0); };
+  } else {
+    biggerSteps = total_steps_right;
+    stepBig = function() { step(0,right_dir); };
+  }
+  biggerSteps -= stepDiff;
+
+  var bigStepArray = intChunk(biggerSteps, stepDiff);
+
+  _.forEach(bigStepArray, function(bigSteps) {
+    _.times(bigSteps, stepBig);
+  });
+
+}
+
 function step(stepsLeft, stepsRight) {
+  // Performs a single step with one or both motors.
   //steps is positive -> extend string
   //steps is negative -> retract string
 
-  if (!isInt(stepsLeft) || !isInt(stepsRight)) {
-    throw new Error("Steps must be an integer! Got " + stepsLeft + ", " + stepsRight);
+  // if (!isInt(stepsLeft) || !isInt(stepsRight)) {
+  //   throw new Error("Steps must be an integer! Got " + stepsLeft + ", " + stepsRight);
+  // }
+
+  if((stepsLeft !== 0 && Math.abs(stepsLeft) !== 1 )
+    || (stepsRight !== 0 && Math.abs(stepsRight) !== 1)) {
+    throw new Error("Steps can only be -1, 0, or 1");
+    // console.log("Warning: multiple steps at once...");
   }
 
   var prevStepDelta = stepDelta.slice();
@@ -36,6 +140,62 @@ function step(stepsLeft, stepsRight) {
   drawSubsteps(prevStepDelta,newStepDelta);
 
 }
+
+function cartesianLength(x0,y0,x1,y1) {
+  // the distance formula!
+  return Math.sqrt(Math.pow(x1-x0,2)+Math.pow(y1-y0,2));
+}
+
+// function drawLine(x0,y0,x1,y1) {
+//   // Draws a straight line using Cartesian coordinates.
+//
+//   var length = cartesianLength(x0,y0,x1,y1);
+//   // var slope = (y1-y0)/(x1-x0);
+//   var segments = length / plotBot.CARTESIAN_RESOLUTION;
+//
+//   // for short lines or low res,
+//   //make sure you don't have a fractional segment number.
+//   if (segments < 1) {
+//     segments = 1;
+//   }
+//
+//   // the difference per segment
+//   var d_xy = [(x1-x0)/segments, (y1-y0)/segments];
+//
+//   var current_xy = [x0, y0];
+//
+//   // keep track of how many times you recalculated and got the same stepDelta
+//   var skipped = 0;
+//
+//   console.log("line length is: " + length);
+//   console.log("Split line up into " + segments + " segments.");
+//   console.log("d_xy is " + d_xy);
+//
+//   //debug: first draw the ideal line you want.
+//   context.strokeStyle = "rgba(215, 113, 168, 0.5)";
+//   context.moveTo(x0,y0);
+//   context.lineTo(x1,y1);
+//   context.stroke();
+//
+//   for(var i = 0; i < segments; i++) {
+//     for(var j = 0; j < 2; j++) {
+//       current_xy[j] += d_xy[j];
+//     }
+//     console.log("x,y = " + current_xy);
+//     var nextDelta = getBipolarCoords.apply(null,current_xy);
+//     if (nextDelta != stepDelta) {
+//       // move if you got a new position.
+//       console.log("stepping to " + nextDelta);
+//       straightLineTo(nextDelta);
+//     }
+//     else {
+//       skipped++;
+//     }
+//   }
+//
+//   console.log("skipped: " + skipped);
+//
+// }
 
 function drawSubsteps(prevStepDelta,newStepDelta) {
   // Draw the sampled points across the displacement
@@ -64,6 +224,17 @@ function drawSubsteps(prevStepDelta,newStepDelta) {
     coords = getCartesian(tempStepDelta);
     drawCircle(coords.x, coords.y, 1, 0, 2*Math.PI);
   }
+}
+
+//TODO next: make a getClosestXY which returns a stepDelta.
+// it's the inverse function of getCartesian.
+// copy from old drawCanvas.js??
+
+function getBipolarCoords(x,y) {
+  var steps_l = Math.sqrt(Math.pow(x,2) + Math.pow(y,2)) / STEP_LEN;
+  var steps_r = (Math.sqrt(Math.pow(WIDTH - x,2) + Math.pow(y,2)) - WIDTH) / STEP_LEN;
+
+  return [Math.round(steps_l), Math.round(steps_r)];
 }
 
 function getCartesian(someStepDelta) {
@@ -140,6 +311,8 @@ document.body.onkeydown = function(event){
 
 };
 
-// so I don't have to keep typing this:
-step(20,0);
-step(27,-36);
+// test stuff
+// drawLine(100,100,300,300);
+stepDelta = [100,100];
+straightLineTo([300,300]);
+console.log(stepDelta);
