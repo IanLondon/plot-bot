@@ -62,22 +62,27 @@ function intChunk(total, segments) {
   return chunkArray;
 }
 
-function moveStraightTo(destDelta) {
-  // Negotiate a "symmetrical" path of step()'s to get from current stepDelta
-  // to destDelta (destination): prefers to move both motors at once, and to
-  // distribute the single-motor motions evenly along the path.
-
-  // TODO: Verify that the destDelta is an array of 2 integers, and that it is
-  // within the bounds of the drawing area.
-
   // TODO: Make another function that divides a cartesian line into samples,
   // Use plotBot.CARTESIAN_RESOLUTION to determine how many samples to make,
   // each sample is an arc where the endpoints are integer bipolar approximations
   // of the cartesian line.
 
+function moveRobotTo(destDelta) {
+  // Negotiate a "symmetrical" path of step()'s to get from current stepDelta
+  // to destDelta (destination): prefers to move both motors at once, and to
+  // distribute the single-motor motions evenly along the path.
+
+  // This is really just for the HTML canvas simulator, the steppers can be run
+  // simultaneously & asychronously with johnny-five.
+
+  // TODO: Verify that the destDelta is an array of 2 integers, and that it is
+  // within the bounds of the drawing area.
+
   var stepDisplacement, stepDirection;
-  var totalSteps, totalDualSteps, totalSingleSteps;
+  var totalSteps, totalDualSteps, totalSingleSteps, singleStepMotorIndex;
+  var biggerStepIndex, smallerStepIndex;
   var primaryMvmt, secondaryMvmt;
+  var primaryIsDual;
 
   stepDisplacement = _.map(stepDelta, function(currentVal,index) {
     return destDelta[index] - currentVal;
@@ -93,9 +98,16 @@ function moveStraightTo(destDelta) {
     return Math.abs(steps);
   });
 
-  totalDualSteps = _.min(totalSteps);
-
-  totalSingleSteps = _.max(totalSteps) - totalDualSteps;
+  if (totalSteps[0] >= totalSteps[1]) {
+    biggerStepIndex = 0;
+    smallerStepIndex = 1;
+  } else {
+    biggerStepIndex = 1;
+    smallerStepIndex = 0;
+  }
+  singleStepIndex = biggerStepIndex;
+  totalSingleSteps = totalSteps[biggerStepIndex] - totalSteps[smallerStepIndex];
+  totalDualSteps = totalSteps[smallerStepIndex];
 
   if (totalDualSteps === 0 || totalSingleSteps === 0) {
     secondaryMvmt = [];
@@ -104,36 +116,63 @@ function moveStraightTo(destDelta) {
   else if (totalDualSteps < totalSingleSteps) {
     secondaryMvmt = intChunk(totalDualSteps, totalDualSteps);
     primaryMvmt = intChunk(totalSingleSteps, totalDualSteps+1);
+    primaryIsDual = false;
   } else {
     secondaryMvmt = intChunk(totalSingleSteps, totalSingleSteps);
     primaryMvmt = intChunk(totalDualSteps, totalSingleSteps+1);
+    primaryIsDual = true;
   }
 
   console.log({primaryMvmt:primaryMvmt, secondaryMvmt:secondaryMvmt});
 
-  _.forEach(secondaryMvmt, function(val,index) {
-    TODO
+
+  function dualStep() {
+    // stepDelta = _.map(stepDelta, function(currentVal, index){
+    //   return currentVal + stepDirection[index];
+    // });
+    step(stepDirection[0], stepDirection[1]);
+  }
+
+  function singleStep() {
+    // stepDelta[singleStepIndex] += stepDirection[singleStepIndex];
+    if (singleStepIndex === 0) {
+      step(stepDirection[0],0);
+    } else {
+      step(0, stepDirection[1]);
+    }
+  }
+
+  // move the canvas "cursor" to the beginning stepDelta
+  context.beginPath();
+  context.strokeStyle = "rgba(255,0,100,1)";
+  context.moveTo(stepDelta[0], stepDelta[1]);
+
+  _.forEach(secondaryMvmt, function(secondarySteps,index) {
+    if (primaryIsDual) {
+      // execute primary mvmt. it's dual.
+      _.times(primaryMvmt[index], dualStep);
+
+      // execute secondary mvmt. it's single.
+      // since secondary mvmt contains only one step, just call it once.
+      singleStep();
+    }
+    else {
+      // primary is singleStep, secondary mvmt is dualStep.
+      _.times(primaryMvmt[index], singleStep);
+      dualStep();
+    }
+
   });
   // there's always one more movement chunk in primaryMvmt than in secondaryMvmt
   // so make that last movement now:
-    STEP HERE
+    if (primaryIsDual) {
+      dualStep();
+    } else {
+      singleStep();
+    }
 
-  // var biggerSteps;
-  // if (total_steps_left > total_steps_right) {
-  //   biggerSteps = total_steps_left;
-  //   stepBig = function() { step(left_dir,0); };
-  // } else {
-  //   biggerSteps = total_steps_right;
-  //   stepBig = function() { step(0,right_dir); };
-  // }
-  // biggerSteps -= stepDiff;
-  //
-  // var bigStepArray = intChunk(biggerSteps, stepDiff);
-  //
-  // _.forEach(bigStepArray, function(bigSteps) {
-  //   _.times(bigSteps, stepBig);
-  // });
-
+    // debug!
+    console.log(stepDelta.slice(0));
 }
 
 function step(stepsLeft, stepsRight) {
@@ -334,9 +373,8 @@ document.body.onkeydown = function(event){
 
 };
 
-// test stuff
-// drawLine(100,100,300,400);
-stepDelta = [100,100];
-moveStraightTo([300,400]);
-// straightLineTo([300,400]);
-console.log(stepDelta);
+// test stuff. should draw a big ">" shape
+stepDelta = [10,-5];
+console.log(stepDelta.slice(0));
+moveRobotTo([16,-9]);
+moveRobotTo([31,1]);
