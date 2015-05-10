@@ -152,7 +152,17 @@ function moveRobotTo(destDelta) {
 
   if (totalDualSteps === 0 || totalSingleSteps === 0) {
     secondaryMvmt = [];
-    primaryMvmt = (totalDualSteps > totalSingleSteps) ? [totalDualSteps] : [totalSingleSteps];
+    if (totalDualSteps === totalSingleSteps) {
+      console.log("weird, moveRobotTo got 0 steps...");
+      return false;
+    }
+    else if (totalDualSteps > totalSingleSteps) {
+      primaryMvmt = [totalDualSteps];
+      primaryIsDual = true;
+    } else {
+      primaryMvmt = [totalSingleSteps];
+      primaryIsDual = false;
+    }
   }
   else if (totalDualSteps < totalSingleSteps) {
     secondaryMvmt = intChunk(totalDualSteps, totalDualSteps);
@@ -214,7 +224,13 @@ function moveRobotTo(destDelta) {
     }
 
     // debug!
-    // console.log(stepDelta.slice(0));
+    console.log("robot moved to");
+    console.log(stepDelta.slice(0));
+
+    if(stepDelta[0] !== destDelta[0] || stepDelta[1] !== destDelta[1]) {
+      console.log("...but should have moved to step delta " + destDelta[0] + ", " + destDelta[1]);
+      console.log("moveRobotTo() did not wind up at destination!");
+    }
 }
 
 function step(stepsLeft, stepsRight) {
@@ -249,57 +265,6 @@ function cartesianLength(x0,y0,x1,y1) {
   // the distance formula!
   return Math.sqrt(Math.pow(x1-x0,2)+Math.pow(y1-y0,2));
 }
-
-// function drawLine(x0,y0,x1,y1) {
-//   // Draws a straight line using Cartesian coordinates.
-//
-//   var length = cartesianLength(x0,y0,x1,y1);
-//   // var slope = (y1-y0)/(x1-x0);
-//   var segments = length / plotBot.CARTESIAN_RESOLUTION;
-//
-//   // for short lines or low res,
-//   //make sure you don't have a fractional segment number.
-//   if (segments < 1) {
-//     segments = 1;
-//   }
-//
-//   // the difference per segment
-//   var d_xy = [(x1-x0)/segments, (y1-y0)/segments];
-//
-//   var current_xy = [x0, y0];
-//
-//   // keep track of how many times you recalculated and got the same stepDelta
-//   var skipped = 0;
-//
-//   console.log("line length is: " + length);
-//   console.log("Split line up into " + segments + " segments.");
-//   console.log("d_xy is " + d_xy);
-//
-//   //debug: first draw the ideal line you want.
-//   context.strokeStyle = "rgba(215, 113, 168, 0.5)";
-//   context.moveTo(x0,y0);
-//   context.lineTo(x1,y1);
-//   context.stroke();
-//
-//   for(var i = 0; i < segments; i++) {
-//     for(var j = 0; j < 2; j++) {
-//       current_xy[j] += d_xy[j];
-//     }
-//     console.log("x,y = " + current_xy);
-//     var nextDelta = getBipolarCoords.apply(null,current_xy);
-//     if (nextDelta != stepDelta) {
-//       // move if you got a new position.
-//       console.log("stepping to " + nextDelta);
-//       straightLineTo(nextDelta);
-//     }
-//     else {
-//       skipped++;
-//     }
-//   }
-//
-//   console.log("skipped: " + skipped);
-//
-// }
 
 function drawSubsteps(prevStepDelta,newStepDelta) {
   // Draw the sampled points across the displacement
@@ -424,11 +389,13 @@ function drawStraightLine(destDelta, timesToSplit) {
 
   _.forEach(allBipolarCoords, function(coords) {
     moveRobotTo(coords);
+    // debug: show the bipolar coords in red
     var cartTemp = getCartesian(coords);
     context.strokeStyle = "red";
     drawCircle(cartTemp.x, cartTemp.y, 1);
   });
 
+  // debug: show the cartesian coords in black
   context.strokeStyle = "black";
   _.forEach(allCartesianCoords, function (coords) {
     drawCircle(coords[0], coords[1], 1);
@@ -439,9 +406,9 @@ function drawStraightLine(destDelta, timesToSplit) {
 //===========TESTS=============
 
 // a horizonal-ish line
-plotBot.COLOR = "rgba(0,255,255,0.25)";
-stepDelta = [10,-5];
-moveRobotTo([57,-55]);
+// plotBot.COLOR = "rgba(0,255,255,0.25)";
+// stepDelta = [10,-5];
+// moveRobotTo([57,-55]);
 
 //==== horizonal-ish, lower. ====
 // the ideal cartesian line
@@ -456,4 +423,8 @@ moveRobotTo(getBipolarCoords(627, 269));
 // now try to approximate it
 plotBot.COLOR = "rgba(50,255,0,0.25)";
 stepDelta = getBipolarCoords(79, 272);
-drawStraightLine(getBipolarCoords(627, 269), 8);
+drawStraightLine(getBipolarCoords(627, 269), 3);
+
+// it's broken, let's try a segment
+// stepDelta = [37,-20];
+// moveRobotTo([52, -35]);

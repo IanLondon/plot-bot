@@ -1,0 +1,13 @@
+WAYS TO CONVERT A CONTINUOUS CARTESIAN LINE (x0,y0), (x1, y1) INTO A SERIES OF DISCRETE BIPOLAR COORDINATES
+
+-Split the cartesian line into N sample points. Eg to split it into N lines:
+  for(i=0; i<=N; i++) {
+    x = (x1-x0)*i/N + x0
+    y = (y1-y0)*i/N + y0
+    // convert (x,y) to bipolar coordinates
+    // do stuff
+  }
+
+-Split the sample points at a resolution high enough that all posible points on the line are included ("oversampling", I guess). Then handle duplicate points somehow.
+
+-Calculate all the discrete bipolar coordinates within a certain distance from the line.
