@@ -1,21 +1,62 @@
+// TODO: Make a namespace for the canvas variables
 var canvas = document.getElementById("canvas1");
 var context = canvas.getContext("2d");
 var imageData = context.createImageData(canvas.width, canvas.height);
 
-// TODO: store all variables in the plotBot namespace
+canvas.addEventListener("mousedown", canvasClick);
+
+function canvasClick(event) {
+  // WARNING: this is not robust. If the canvas is not positioned relative to
+  // the whole page (not nested), and maybe if you scroll, it can cause problems.
+  var coords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
+  console.log(coords);
+  return coords;
+}
+
+document.body.onkeydown = function(event){
+    event = event || window.event;
+    var keycode = event.charCode || event.keyCode;
+    if(keycode === 68){
+      //"d" key
+      // l_step_retract();
+      step(-1,0);
+    }
+    if(keycode === 70){
+      //"f" key
+      // l_step_extend();
+      step(1,0);
+    }
+    if(keycode === 75){
+      //"k" key
+      // r_step_retract();
+      step(0,-1);
+    }
+    if(keycode === 74){
+      //"j" key
+      // r_step_extend();
+      step(0,1);
+    }
+};
+
+//==============TODO: Separate into diff files===============//
+
 var plotBot = {};
 
-var STEP_LEN = 10;
+plotBot.STEP_LEN = 10;
 
 // Cartesian resolution sets the granularity when approximating a straight line.
-plotBot.CARTESIAN_RESOLUTION = STEP_LEN;
 // I'm trying the resolution as the step length... will it work??
+plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN;
+
+// Color as used by context.strokeStyle (right now, used only by drawSubsteps)
+plotBot.COLOR = "rgba(255,0,0,0.25)";
 
 // horizontal dist btw the 2 stepper motors.
-var WIDTH = canvas.width;
+plotBot.WIDTH = canvas.width;
 
 // Keep track of steps from the origin position for left and right motors.
 // it should always be an integer. Negative values are OK.
+// TODO: store this variable in the plotBot namespace
 var stepDelta = [0,0];
 
 function isInt(value) {
@@ -166,9 +207,9 @@ function moveRobotTo(destDelta) {
   // there's always one more movement chunk in primaryMvmt than in secondaryMvmt
   // so make that last movement now:
     if (primaryIsDual) {
-      dualStep();
+      _.times(primaryMvmt[primaryMvmt.length - 1], dualStep);
     } else {
-      singleStep();
+      _.times(primaryMvmt[primaryMvmt.length - 1], singleStep);
     }
 
     // debug!
@@ -265,7 +306,7 @@ function drawSubsteps(prevStepDelta,newStepDelta) {
   var substepResolution = 4; //for spotty dotty trace, use 2.
   var deltaDiff = [];
 
-  context.strokeStyle = "rgba(255,0,0,0.5)";
+  context.strokeStyle = plotBot.COLOR;
 
   for (var diff_i = 0; diff_i < 2; diff_i++) {
     deltaDiff[diff_i] = newStepDelta[diff_i] - prevStepDelta[diff_i];
@@ -293,8 +334,8 @@ function drawSubsteps(prevStepDelta,newStepDelta) {
 // copy from old drawCanvas.js??
 
 function getBipolarCoords(x,y) {
-  var steps_l = Math.sqrt(Math.pow(x,2) + Math.pow(y,2)) / STEP_LEN;
-  var steps_r = (Math.sqrt(Math.pow(WIDTH - x,2) + Math.pow(y,2)) - WIDTH) / STEP_LEN;
+  var steps_l = Math.sqrt(Math.pow(x,2) + Math.pow(y,2)) / plotBot.STEP_LEN;
+  var steps_r = (Math.sqrt(Math.pow(plotBot.WIDTH - x,2) + Math.pow(y,2)) - plotBot.WIDTH) / plotBot.STEP_LEN;
 
   return [Math.round(steps_l), Math.round(steps_r)];
 }
@@ -304,11 +345,11 @@ function getCartesian(someStepDelta) {
   someStepDelta = someStepDelta.slice();
 
   //string lengths
-  var s_l = someStepDelta[0]*STEP_LEN;
-  var s_r = someStepDelta[1]*STEP_LEN + WIDTH;
+  var s_l = someStepDelta[0]*plotBot.STEP_LEN;
+  var s_r = someStepDelta[1]*plotBot.STEP_LEN + plotBot.WIDTH;
 
   //cartesian coords
-  var x = (Math.pow(s_l, 2) - Math.pow(s_r, 2) + Math.pow(WIDTH, 2) ) / (2 * WIDTH);
+  var x = (Math.pow(s_l, 2) - Math.pow(s_r, 2) + Math.pow(plotBot.WIDTH, 2) ) / (2 * plotBot.WIDTH);
   var y = Math.sqrt( Math.abs( Math.pow(s_l, 2) - Math.pow(x,2) ));
 
   return {x:x, y:y, s_l:s_l, s_r:s_r};
@@ -339,42 +380,16 @@ function drawCircle(x,y,radius,startAngle,endAngle,counterClockwise) {
 }
 
 // Draw the possible coordinates in a bipolar "grid".
-for (var i = 0; i < 1000; i+=STEP_LEN) {
+for (var i = 0; i < 1000; i+=plotBot.STEP_LEN) {
   context.strokeStyle = "rgba(255, 0, 0, 0.10)";
   drawCircle(0, 0, i, 0, 2*Math.PI, false);
 
   context.strokeStyle = "rgba(0, 0, 255, 0.10)";
-  drawCircle(WIDTH, 0, i, 0, 2*Math.PI, false);
+  drawCircle(plotBot.WIDTH, 0, i, 0, 2*Math.PI, false);
 }
 
-document.body.onkeydown = function(event){
-    event = event || window.event;
-    var keycode = event.charCode || event.keyCode;
-    if(keycode === 68){
-      //"d" key
-      // l_step_retract();
-      step(-1,0);
-    }
-    if(keycode === 70){
-      //"f" key
-      // l_step_extend();
-      step(1,0);
-    }
-    if(keycode === 75){
-      //"k" key
-      // r_step_retract();
-      step(0,-1);
-    }
-    if(keycode === 74){
-      //"j" key
-      // r_step_extend();
-      step(0,1);
-    }
 
-};
-
-// test stuff. should draw a big ">" shape
+// a horizonal-ish line
+plotBot.COLOR = "rgba(0,255,255,0.25)";
 stepDelta = [10,-5];
-console.log(stepDelta.slice(0));
-moveRobotTo([16,-9]);
-moveRobotTo([31,1]);
+moveRobotTo([57,-55]);
