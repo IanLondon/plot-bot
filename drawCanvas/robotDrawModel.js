@@ -424,6 +424,9 @@ function drawStraightLine(destDelta, timesToSplit) {
 
   _.forEach(allBipolarCoords, function(coords) {
     moveRobotTo(coords);
+    var cartTemp = getCartesian(coords);
+    context.strokeStyle = "red";
+    drawCircle(cartTemp.x, cartTemp.y, 1);
   });
 
   context.strokeStyle = "black";
@@ -451,5 +454,6 @@ plotBot.COLOR = "rgba(0,0,255,0.25)";
 stepDelta = getBipolarCoords(79, 272);
 moveRobotTo(getBipolarCoords(627, 269));
 // now try to approximate it
+plotBot.COLOR = "rgba(50,255,0,0.25)";
 stepDelta = getBipolarCoords(79, 272);
 drawStraightLine(getBipolarCoords(627, 269), 8);
