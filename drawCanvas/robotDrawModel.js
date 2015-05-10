@@ -38,7 +38,7 @@ document.body.onkeydown = function(event){
     }
 };
 
-//==============TODO: Separate into diff files===============//
+//==============TODO: Separate into diff files??? ==============//
 
 var plotBot = {};
 
@@ -114,7 +114,7 @@ function moveRobotTo(destDelta) {
   // distribute the single-motor motions evenly along the path.
 
   // This is really just for the HTML canvas simulator, the steppers can be run
-  // simultaneously & asychronously with johnny-five.
+  // simultaneously & asychronously with johnny-five... maybe. XXX
 
   // TODO: Verify that the destDelta is an array of 2 integers, and that it is
   // within the bounds of the drawing area.
@@ -164,7 +164,7 @@ function moveRobotTo(destDelta) {
     primaryIsDual = true;
   }
 
-  console.log({primaryMvmt:primaryMvmt, secondaryMvmt:secondaryMvmt});
+  // console.log({primaryMvmt:primaryMvmt, secondaryMvmt:secondaryMvmt});
 
 
   function dualStep() {
@@ -206,6 +206,7 @@ function moveRobotTo(destDelta) {
   });
   // there's always one more movement chunk in primaryMvmt than in secondaryMvmt
   // so make that last movement now:
+  // TODO use _.last(primaryMvmt) instead
     if (primaryIsDual) {
       _.times(primaryMvmt[primaryMvmt.length - 1], dualStep);
     } else {
@@ -213,7 +214,7 @@ function moveRobotTo(destDelta) {
     }
 
     // debug!
-    console.log(stepDelta.slice(0));
+    // console.log(stepDelta.slice(0));
 }
 
 function step(stepsLeft, stepsRight) {
@@ -325,13 +326,9 @@ function drawSubsteps(prevStepDelta,newStepDelta) {
     tempStepDelta = _.map([substep_i,substep_i], subStepMap);
 
     coords = getCartesian(tempStepDelta);
-    drawCircle(coords.x, coords.y, 1, 0, 2*Math.PI);
+    drawCircle(coords.x, coords.y, 1);
   }
 }
-
-//TODO next: make a getClosestXY which returns a stepDelta.
-// it's the inverse function of getCartesian.
-// copy from old drawCanvas.js??
 
 function getBipolarCoords(x,y) {
   var steps_l = Math.sqrt(Math.pow(x,2) + Math.pow(y,2)) / plotBot.STEP_LEN;
@@ -355,41 +352,104 @@ function getCartesian(someStepDelta) {
   return {x:x, y:y, s_l:s_l, s_r:s_r};
 }
 
-/*
-TODO: make stepL(dir) stepR(di) stepLR(dirL, dirR) instead
-of directly inc/dec stepDelta.
-Then, make them actually draw the arc!
-Then, try to draw a straight line!
-*/
+
 function updateCursor() {
-  // bug: something weird happens when you pull
+  // FIXME bug: something weird happens when you pull
   // the line enough to "stretch" it
 
   var coords = getCartesian(stepDelta);
 
   // draw the cursor position
   context.strokeStyle = "rgba(0, 0, 0, 0.10)";
-  drawCircle(coords.x, coords.y, 3, 0, 2*Math.PI);
+  drawCircle(coords.x, coords.y, 3);
 }
 
 
-function drawCircle(x,y,radius,startAngle,endAngle,counterClockwise) {
+function drawArc(x,y,radius,startAngle,endAngle,counterClockwise) {
   context.beginPath();
   context.arc(x, y, radius, startAngle, endAngle, counterClockwise);
   context.stroke();
 }
 
-// Draw the possible coordinates in a bipolar "grid".
-for (var i = 0; i < 1000; i+=plotBot.STEP_LEN) {
-  context.strokeStyle = "rgba(255, 0, 0, 0.10)";
-  drawCircle(0, 0, i, 0, 2*Math.PI, false);
-
-  context.strokeStyle = "rgba(0, 0, 255, 0.10)";
-  drawCircle(plotBot.WIDTH, 0, i, 0, 2*Math.PI, false);
+function drawCircle(x,y,radius) {
+  context.beginPath();
+  context.arc(x, y, radius, 0, 2*Math.PI, false);
+  context.stroke();
 }
 
+// Draw the bipolar "grid".
+for (var i = 0; i < 1000; i+=plotBot.STEP_LEN) {
+  context.strokeStyle = "rgba(255, 0, 0, 0.10)";
+  drawArc(0, 0, i, 0, 2*Math.PI, false);
+
+  context.strokeStyle = "rgba(0, 0, 255, 0.10)";
+  drawArc(plotBot.WIDTH, 0, i, 0, 2*Math.PI, false);
+}
+
+function drawStraightLine(destDelta, timesToSplit) {
+  // draw an approximately straight line from current stepDelta
+  // to destDelta, by splitting up the cartesian line a given no of times
+  var coords0, coords1;
+  var x, x0, x1, y, y0, y1;
+  var allCoords;
+
+  currentCoords = getCartesian(stepDelta);
+  destCoords = getCartesian(destDelta);
+
+  x0 = currentCoords.x;
+  y0 = currentCoords.y;
+  x1 = destCoords.x;
+  y1 = destCoords.y;
+
+  allCartesianCoords = [];
+  allBipolarCoords = [];
+
+  if (x1-x0 === 0 && y1-y0 === 0) {
+    console.log("drawStraightLine got same coords, skipping.");
+  } else {
+    for(var i=0; i<=timesToSplit; i++) {
+      x = (x1-x0)*i/timesToSplit + x0;
+      y = (y1-y0)*i/timesToSplit + y0;
+
+      allCartesianCoords.push([x,y]);
+      allBipolarCoords.push(getBipolarCoords(x,y));
+    }
+  }
+
+  // DEBUG FIXME
+
+  console.log("bipolar & cart");
+  console.log( allBipolarCoords );
+  console.log( allCartesianCoords);
+
+  _.forEach(allBipolarCoords, function(coords) {
+    moveRobotTo(coords);
+  });
+
+  context.strokeStyle = "black";
+  _.forEach(allCartesianCoords, function (coords) {
+    drawCircle(coords[0], coords[1], 1);
+  });
+
+}
+
+//===========TESTS=============
 
 // a horizonal-ish line
 plotBot.COLOR = "rgba(0,255,255,0.25)";
 stepDelta = [10,-5];
 moveRobotTo([57,-55]);
+
+//==== horizonal-ish, lower. ====
+// the ideal cartesian line
+context.strokeStyle = "pink";
+context.moveTo(79, 272);
+context.lineTo(627,269);
+context.stroke();
+// this is a "native" stepper line
+plotBot.COLOR = "rgba(0,0,255,0.25)";
+stepDelta = getBipolarCoords(79, 272);
+moveRobotTo(getBipolarCoords(627, 269));
+// now try to approximate it
+stepDelta = getBipolarCoords(79, 272);
+drawStraightLine(getBipolarCoords(627, 269), 8);
