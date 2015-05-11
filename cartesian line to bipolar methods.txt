@@ -8,6 +8,6 @@ WAYS TO CONVERT A CONTINUOUS CARTESIAN LINE (x0,y0), (x1, y1) INTO A SERIES OF D
     // do stuff
   }
 
--Split the sample points at a resolution high enough that all posible points on the line are included ("oversampling", I guess). Then handle duplicate points somehow.
+-Split the sample points at a resolution high enough that all posible points on the line are included ("oversampling", I guess). Then handle duplicate points somehow. The bad thing is that this can make the lines more jagged.
 
 -Calculate all the discrete bipolar coordinates within a certain distance from the line.

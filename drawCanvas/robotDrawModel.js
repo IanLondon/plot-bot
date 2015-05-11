@@ -19,9 +19,9 @@ function canvasMouseUp(event) {
   // draw a line from the mouseDown-set stepDelta to the
   // mouseUp-set destDelta.
   // TODO: use non-arbitrary segment count. Length??
-  var coords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
-  var segments = 4;
-  drawStraightLine( getBipolarCoords(coords[0], coords[1]), segments);
+  var mouseupCoords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
+
+  drawStraightLine( getBipolarCoords(mouseupCoords[0], mouseupCoords[1]));
 }
 
 document.body.onkeydown = function(event){
@@ -56,8 +56,9 @@ var plotBot = {};
 plotBot.STEP_LEN = 10;
 
 // Cartesian resolution sets the granularity when approximating a straight line.
-// I'm trying the resolution as the step length... will it work??
-plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN;
+// =STEP_LEN*4 is a rule of thumb, it can be set differently depending on the drawing
+// and configuration.
+plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 4;
 
 // Color as used by context.strokeStyle (right now, used only by drawSubsteps)
 plotBot.COLOR = "rgba(255,0,0,0.25)";
@@ -164,6 +165,7 @@ function moveRobotTo(destDelta) {
   if (totalDualSteps === 0 || totalSingleSteps === 0) {
     secondaryMvmt = [];
     if (totalDualSteps === totalSingleSteps) {
+      // TODO: moveRobotTo gets 0 steps all the time. Handle this earlier!
       console.log("weird, moveRobotTo got 0 steps...");
       return false;
     }
@@ -235,8 +237,8 @@ function moveRobotTo(destDelta) {
     }
 
     // debug!
-    console.log("robot moved to");
-    console.log(stepDelta.slice(0));
+    // console.log("robot moved to");
+    // console.log(stepDelta.slice(0));
 
     if(stepDelta[0] !== destDelta[0] || stepDelta[1] !== destDelta[1]) {
       console.log("...but should have moved to step delta " + destDelta[0] + ", " + destDelta[1]);
@@ -362,12 +364,13 @@ for (var i = 0; i < 1000; i+=plotBot.STEP_LEN) {
   drawArc(plotBot.WIDTH, 0, i, 0, 2*Math.PI, false);
 }
 
-function drawStraightLine(destDelta, timesToSplit) {
+function drawStraightLine(destDelta) {
   // draw an approximately straight line from current stepDelta
   // to destDelta, by splitting up the cartesian line a given no of times
   var coords0, coords1;
   var x, x0, x1, y, y0, y1;
   var allCoords;
+  var lineLength, timesToSplit;
 
   currentCoords = getCartesian(stepDelta);
   destCoords = getCartesian(destDelta);
@@ -379,6 +382,10 @@ function drawStraightLine(destDelta, timesToSplit) {
 
   allCartesianCoords = [];
   allBipolarCoords = [];
+
+  lineLength = cartesianLength(x0, y0, x1, y1);
+  timesToSplit = Math.ceil(lineLength / plotBot.CARTESIAN_RESOLUTION);
+  // console.log("splitting line of length " + lineLength + " into " + timesToSplit + " segments.");
 
   if (x1-x0 === 0 && y1-y0 === 0) {
     console.log("drawStraightLine got same coords, skipping.");
@@ -392,22 +399,16 @@ function drawStraightLine(destDelta, timesToSplit) {
     }
   }
 
-  // DEBUG FIXME
-
-  console.log("bipolar & cart");
-  console.log( allBipolarCoords );
-  console.log( allCartesianCoords);
-
   _.forEach(allBipolarCoords, function(coords) {
     moveRobotTo(coords);
     // debug: show the bipolar coords in red
     var cartTemp = getCartesian(coords);
-    context.strokeStyle = "red";
+    context.strokeStyle = "rgba(255,0,0,0.5)";
     drawCircle(cartTemp.x, cartTemp.y, 1);
   });
 
   // debug: show the cartesian coords in black
-  context.strokeStyle = "black";
+  context.strokeStyle = "rgba(0,0,0,0.5)";
   _.forEach(allCartesianCoords, function (coords) {
     drawCircle(coords[0], coords[1], 1);
   });
@@ -431,7 +432,24 @@ function drawStraightLine(destDelta, timesToSplit) {
 // plotBot.COLOR = "rgba(0,0,255,0.25)";
 // stepDelta = getBipolarCoords(79, 272);
 // moveRobotTo(getBipolarCoords(627, 269));
-// // now try to approximate it
+
+// now try to approximate it
 // plotBot.COLOR = "rgba(50,255,0,0.25)";
+// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 1;
 // stepDelta = getBipolarCoords(79, 272);
-// drawStraightLine(getBipolarCoords(627, 269), 3);
+// drawStraightLine(getBipolarCoords(627, 269));
+//
+// plotBot.COLOR = "rgba(0,255,0,0.25)";
+// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 5;
+// stepDelta = getBipolarCoords(79, 290);
+// drawStraightLine(getBipolarCoords(627, 290));
+//
+// plotBot.COLOR = "rgba(0,0,255,0.25)";
+// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 10;
+// stepDelta = getBipolarCoords(79, 315);
+// drawStraightLine(getBipolarCoords(627, 315));
+//
+// plotBot.COLOR = "rgba(255,0,255,0.25)";
+// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 15;
+// stepDelta = getBipolarCoords(79, 330);
+// drawStraightLine(getBipolarCoords(627, 330));
