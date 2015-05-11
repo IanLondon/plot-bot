@@ -3,14 +3,25 @@ var canvas = document.getElementById("canvas1");
 var context = canvas.getContext("2d");
 var imageData = context.createImageData(canvas.width, canvas.height);
 
-canvas.addEventListener("mousedown", canvasClick);
+canvas.addEventListener("mousedown", canvasMouseDown);
+canvas.addEventListener("mouseup", canvasMouseUp);
 
-function canvasClick(event) {
+function canvasMouseDown(event) {
   // WARNING: this is not robust. If the canvas is not positioned relative to
   // the whole page (not nested), and maybe if you scroll, it can cause problems.
   var coords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
-  console.log(coords);
-  return coords;
+  // console.log(coords);
+  // return coords;
+  stepDelta = getBipolarCoords(coords[0], coords[1]);
+}
+
+function canvasMouseUp(event) {
+  // draw a line from the mouseDown-set stepDelta to the
+  // mouseUp-set destDelta.
+  // TODO: use non-arbitrary segment count. Length??
+  var coords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
+  var segments = 4;
+  drawStraightLine( getBipolarCoords(coords[0], coords[1]), segments);
 }
 
 document.body.onkeydown = function(event){
@@ -403,7 +414,7 @@ function drawStraightLine(destDelta, timesToSplit) {
 
 }
 
-//===========TESTS=============
+//===========DEBUG TESTS=============
 
 // a horizonal-ish line
 // plotBot.COLOR = "rgba(0,255,255,0.25)";
@@ -412,19 +423,15 @@ function drawStraightLine(destDelta, timesToSplit) {
 
 //==== horizonal-ish, lower. ====
 // the ideal cartesian line
-context.strokeStyle = "pink";
-context.moveTo(79, 272);
-context.lineTo(627,269);
-context.stroke();
-// this is a "native" stepper line
-plotBot.COLOR = "rgba(0,0,255,0.25)";
-stepDelta = getBipolarCoords(79, 272);
-moveRobotTo(getBipolarCoords(627, 269));
-// now try to approximate it
-plotBot.COLOR = "rgba(50,255,0,0.25)";
-stepDelta = getBipolarCoords(79, 272);
-drawStraightLine(getBipolarCoords(627, 269), 3);
-
-// it's broken, let's try a segment
-// stepDelta = [37,-20];
-// moveRobotTo([52, -35]);
+// context.strokeStyle = "pink";
+// context.moveTo(79, 272);
+// context.lineTo(627,269);
+// context.stroke();
+// // this is a "native" stepper line
+// plotBot.COLOR = "rgba(0,0,255,0.25)";
+// stepDelta = getBipolarCoords(79, 272);
+// moveRobotTo(getBipolarCoords(627, 269));
+// // now try to approximate it
+// plotBot.COLOR = "rgba(50,255,0,0.25)";
+// stepDelta = getBipolarCoords(79, 272);
+// drawStraightLine(getBipolarCoords(627, 269), 3);
