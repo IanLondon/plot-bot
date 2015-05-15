@@ -5,5 +5,5 @@ Right now it is only a simple vector-drawing-in-discrete-bipolar-coordinates sim
 
 You can draw straight lines by clicking and dragging on the canvas (line will start on mousedown and ends on mouseup), or by entering commands in the console like:
 
-    plotBot.COLOR = "rgba(255,0,0,0.25);
+    plotBot.COLOR = "rgba(255,0,0,0.25)";
     moveRobotTo(getBipolarCoords(100,200));
