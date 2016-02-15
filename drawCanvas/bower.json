@@ -3,12 +3,10 @@
   "main": "drawCanvas.html",
   "version": "0.0.0",
   "authors": [
-    "hail-seitan <ianlondondu@gmail.com>"
+    "IanLondon <ianlondondu@gmail.com>"
   ],
   "description": "emulates the wallrobot in <canvas>",
-  "moduleType": [
-    "globals"
-  ],
+  "moduleType": [],
   "keywords": [
     "nodebot",
     "canvas",
@@ -23,7 +21,7 @@
     "tests"
   ],
   "dependencies": {
-    "victor": "~0.2.6",
-    "lodash": "~3.7.0"
-  }
+    "opentype.js": "^0.6.0"
+  },
+  "homepage": "https://github.com/IanLondon/plot-bot"
 }
