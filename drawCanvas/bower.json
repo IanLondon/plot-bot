@@ -21,7 +21,7 @@
     "tests"
   ],
   "dependencies": {
-    "opentype.js": "^0.6.0"
+    "opentype.js": "^0.6.0",
   },
   "homepage": "https://github.com/IanLondon/plot-bot"
 }
