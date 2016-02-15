@@ -125,8 +125,7 @@ function moveRobotTo(destDelta) {
   // to destDelta (destination): prefers to move both motors at once, and to
   // distribute the single-motor motions evenly along the path.
 
-  // This is really just for the HTML canvas simulator, the steppers can be run
-  // simultaneously & asychronously with johnny-five... maybe. XXX
+  // XXX: This is really just for the HTML canvas simulator, the steppers can be run simultaneously & asychronously with johnny-five... maybe.
 
   // TODO: Verify that the destDelta is an array of 2 integers, and that it is
   // within the bounds of the drawing area.
@@ -250,6 +249,8 @@ function step(stepsLeft, stepsRight) {
   // Performs a single step with one or both motors.
   //steps is positive -> extend string
   //steps is negative -> retract string
+
+  // TODO: connect johnny-five here!!!
 
   // if (!isInt(stepsLeft) || !isInt(stepsRight)) {
   //   throw new Error("Steps must be an integer! Got " + stepsLeft + ", " + stepsRight);

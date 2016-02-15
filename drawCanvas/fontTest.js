@@ -24,7 +24,7 @@ opentype.load('fonts/candy_shop/Candy\ Shop\ Black.ttf', function(err, font) {
         // path.commands has x y coords, all except the last
         for (i = 0; i < cmds.length; i++) {
             if (cmds[i].type != 'Z') {
-                // drawStraightLine is probably better, test IRL XXX
+                // XXX: drawStraightLine is probably better, test IRL
                 drawStraightLine(getBipolarCoords(cmds[i].x,cmds[i].y));
                 // moveRobotTo(getBipolarCoords(cmds[i].x,cmds[i].y));
             }
