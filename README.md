@@ -23,13 +23,13 @@ You can manually extend/retract the stepper motors by pressing the following key
 </tr>
 <tr>
     <td>Left</td>
-    <td>`f`</td>
-    <td>`d`</td>
+    <td>f</td>
+    <td>d</td>
 </tr>
 <tr>
     <td>Right</td>
-    <td>`j`</td>
-    <td>`k`</td>
+    <td>j</td>
+    <td>k</td>
 </tr>
 </table>
 
