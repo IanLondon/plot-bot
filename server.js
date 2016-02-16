@@ -13,28 +13,28 @@ app.get('/', function(req, res){
 });
 
 // Initialize johnny-five board
-// var board = new five.Board();
+var board = new five.Board();
 
-// board.on("ready", function() {
-//
-// // Initialize stepper motors
-//     var stepperLeft = new five.Stepper({
-//         type: five.Stepper.TYPE.DRIVER,
-//         stepsPerRev: 48,
-//         pins: {
-//             step: 2,
-//             dir: 3
-//         }
-//     });
-//
-//     var stepperRight = new five.Stepper({
-//         type: five.Stepper.TYPE.DRIVER,
-//         stepsPerRev: 48,
-//         pins: {
-//             step: 10,
-//             dir: 11
-//         }
-//     });
+board.on("ready", function() {
+
+// Initialize stepper motors
+    var stepperLeft = new five.Stepper({
+        type: five.Stepper.TYPE.DRIVER,
+        stepsPerRev: 48,
+        pins: {
+            step: 2,
+            dir: 3
+        }
+    });
+
+    var stepperRight = new five.Stepper({
+        type: five.Stepper.TYPE.DRIVER,
+        stepsPerRev: 48,
+        pins: {
+            step: 10,
+            dir: 11
+        }
+    });
 
     io.on('connection', function (socket) {
         socket.on('step', function (data, callback) {
@@ -49,7 +49,7 @@ app.get('/', function(req, res){
         }
       });
     });
-// });
+});
 
 http.listen(3000, function(){
     console.log('listening on *:3000');
