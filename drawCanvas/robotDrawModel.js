@@ -6,22 +6,20 @@ var imageData = context.createImageData(canvas.width, canvas.height);
 // Begin socket.io connection (auto-discovery)
 var socket = io();
 
-canvas.addEventListener("mousedown", canvasMouseDown);
+// canvas.addEventListener("mousedown", canvasMouseDown);
 canvas.addEventListener("mouseup", canvasMouseUp);
 
-function canvasMouseDown(event) {
-  // WARNING: this is not robust. If the canvas is not positioned relative to
-  // the whole page (not nested), and maybe if you scroll, it can cause problems.
-  var coords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
-  // console.log(coords);
-  // return coords;
-  stepDelta = getBipolarCoords(coords[0], coords[1]);
-}
+// function canvasMouseDown(event) {
+//   // WARNING: this is not robust. If the canvas is not positioned relative to
+//   // the whole page (not nested), and maybe if you scroll, it can cause problems.
+//   var coords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
+//   // console.log(coords);
+//   // return coords;
+//   stepDelta = getBipolarCoords(coords[0], coords[1]);
+// }
 
 function canvasMouseUp(event) {
-  // draw a line from the mouseDown-set stepDelta to the
-  // mouseUp-set destDelta.
-  // TODO: use non-arbitrary segment count. Length??
+  // draw a line from the "current position" stepDelta to given destDelta.
   var mouseupCoords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
 
   drawStraightLine( getBipolarCoords(mouseupCoords[0], mouseupCoords[1]));
@@ -250,44 +248,43 @@ function moveRobotTo(destDelta) {
 }
 
 function step(stepsLeft, stepsRight) {
-  // Performs a single step with one or both motors.
-  //steps is positive -> extend string
-  //steps is negative -> retract string
+    // Performs a single step with one or both motors.
+    //steps is positive -> extend string
+    //steps is negative -> retract string
 
-  // if (!isInt(stepsLeft) || !isInt(stepsRight)) {
-  //   throw new Error("Steps must be an integer! Got " + stepsLeft + ", " + stepsRight);
-  // }
+    // if (!isInt(stepsLeft) || !isInt(stepsRight)) {
+    //   throw new Error("Steps must be an integer! Got " + stepsLeft + ", " + stepsRight);
+    // }
 
-  if((stepsLeft !== 0 && Math.abs(stepsLeft) !== 1 )
-    || (stepsRight !== 0 && Math.abs(stepsRight) !== 1)) {
-    throw new Error("Steps can only be -1, 0, or 1");
-    // console.log("Warning: multiple steps at once...");
-  }
+    if((stepsLeft !== 0 && Math.abs(stepsLeft) !== 1 ) ||
+    (stepsRight !== 0 && Math.abs(stepsRight) !== 1)) {
+        throw new Error("Steps can only be -1, 0, or 1");
+        // console.log("Warning: multiple steps at once...");
+    }
 
-  // Emit a step event to the server
-  socket.emit('step', {'stepsLeft':stepsLeft, 'stepsRight': stepsRight}, function(response) {
-      if (response.ok) {
-          console.log("got OK from server");
+    // Emit a step event to the server
+    socket.emit('step', {'stepsLeft':stepsLeft, 'stepsRight': stepsRight}, function(response) {
+        if (response.ok) {
+            console.log("got OK from server");
 
-          var prevStepDelta = stepDelta.slice();
+            var prevStepDelta = stepDelta.slice();
 
-          //Update stepDelta with new position
-          stepDelta[0] += stepsLeft;
-          stepDelta[1] += stepsRight;
+            //Update stepDelta with new position
+            stepDelta[0] += stepsLeft;
+            stepDelta[1] += stepsRight;
 
-          var newStepDelta = stepDelta.slice();
+            var newStepDelta = stepDelta.slice();
 
-          updateCursor();
-          drawSubsteps(prevStepDelta,newStepDelta);
-      }
-      else {
-          console.log("non-ok response from server");
-          console.log(response)
-      }
+            updateCursor();
+            drawSubsteps(prevStepDelta,newStepDelta);
+        } else {
+            console.log("non-ok response from server");
+            console.log(response);
+        }
     });
 }
 
-function cartesianLength(x0,y0,x1,y1) {
+function cartesianLength(x0, y0, x1, y1) {
   // the distance formula!
   return Math.sqrt(Math.pow(x1-x0,2)+Math.pow(y1-y0,2));
 }
@@ -378,55 +375,79 @@ for (var i = 0; i < 1000; i+=plotBot.STEP_LEN) {
 }
 
 function drawStraightLine(destDelta) {
-  // draw an approximately straight line from current stepDelta
-  // to destDelta, by splitting up the cartesian line a given no of times
-  var coords0, coords1;
-  var x, x0, x1, y, y0, y1;
-  var allCoords;
-  var lineLength, timesToSplit;
+    // TODO: Draws an approximately straight line between
+    // but the "straightness" isn't implemented anymore.
 
-  currentCoords = getCartesian(stepDelta);
-  destCoords = getCartesian(destDelta);
+    delta = {
+        'leftDelta': destDelta[0] - stepDelta[0],
+        'rightDelta': destDelta[1] - stepDelta[1]
+    };
 
-  x0 = currentCoords.x;
-  y0 = currentCoords.y;
-  x1 = destCoords.x;
-  y1 = destCoords.y;
+    socket.emit('line', delta, function(response){
+        if (response.ok) {
+            console.log('ok line from server');
+            // update the stepDelta
+            stepDelta = destDelta.slice();
 
-  allCartesianCoords = [];
-  allBipolarCoords = [];
-
-  lineLength = cartesianLength(x0, y0, x1, y1);
-  timesToSplit = Math.ceil(lineLength / plotBot.CARTESIAN_RESOLUTION);
-  // console.log("splitting line of length " + lineLength + " into " + timesToSplit + " segments.");
-
-  if (x1-x0 === 0 && y1-y0 === 0) {
-    console.log("drawStraightLine got same coords, skipping.");
-  } else {
-    for(var i=0; i<=timesToSplit; i++) {
-      x = (x1-x0)*i/timesToSplit + x0;
-      y = (y1-y0)*i/timesToSplit + y0;
-
-      allCartesianCoords.push([x,y]);
-      allBipolarCoords.push(getBipolarCoords(x,y));
-    }
-  }
-
-  _.forEach(allBipolarCoords, function(coords) {
-    moveRobotTo(coords);
-    // debug: show the bipolar coords in red
-    var cartTemp = getCartesian(coords);
-    context.strokeStyle = "rgba(255,0,0,0.5)";
-    drawCircle(cartTemp.x, cartTemp.y, 1);
-  });
-
-  // debug: show the cartesian coords in black
-  context.strokeStyle = "rgba(0,0,0,0.5)";
-  _.forEach(allCartesianCoords, function (coords) {
-    drawCircle(coords[0], coords[1], 1);
-  });
+            // TODO: canvas draw again, without using step()
+            console.log("TODO: drawStraightLine on canvas again.");
+        } else {
+            console.log('line error');
+        }
+    });
 
 }
+
+// function drawStraightLine(destDelta) {
+//   // draw an approximately straight line from current stepDelta
+//   // to destDelta, by splitting up the cartesian line a given no of times
+//   var coords0, coords1;
+//   var x, x0, x1, y, y0, y1;
+//   var allCoords;
+//   var lineLength, timesToSplit;
+//
+//   currentCoords = getCartesian(stepDelta);
+//   destCoords = getCartesian(destDelta);
+//
+//   x0 = currentCoords.x;
+//   y0 = currentCoords.y;
+//   x1 = destCoords.x;
+//   y1 = destCoords.y;
+//
+//   allCartesianCoords = [];
+//   allBipolarCoords = [];
+//
+//   lineLength = cartesianLength(x0, y0, x1, y1);
+//   timesToSplit = Math.ceil(lineLength / plotBot.CARTESIAN_RESOLUTION);
+//   // console.log("splitting line of length " + lineLength + " into " + timesToSplit + " segments.");
+//
+//   if (x1-x0 === 0 && y1-y0 === 0) {
+//     console.log("drawStraightLine got same coords, skipping.");
+//   } else {
+//     for(var i=0; i<=timesToSplit; i++) {
+//       x = (x1-x0)*i/timesToSplit + x0;
+//       y = (y1-y0)*i/timesToSplit + y0;
+//
+//       allCartesianCoords.push([x,y]);
+//       allBipolarCoords.push(getBipolarCoords(x,y));
+//     }
+//   }
+//
+//   _.forEach(allBipolarCoords, function(coords) {
+//     moveRobotTo(coords);
+//     // debug: show the bipolar coords in red
+//     var cartTemp = getCartesian(coords);
+//     context.strokeStyle = "rgba(255,0,0,0.5)";
+//     drawCircle(cartTemp.x, cartTemp.y, 1);
+//   });
+//
+//   // debug: show the cartesian coords in black
+//   context.strokeStyle = "rgba(0,0,0,0.5)";
+//   _.forEach(allCartesianCoords, function (coords) {
+//     drawCircle(coords[0], coords[1], 1);
+//   });
+//
+// }
 
 //===========DEBUG TESTS=============
 

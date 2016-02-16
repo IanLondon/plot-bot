@@ -102,9 +102,11 @@ board.on("ready", function() {
         // straight line
         socket.on('line', function (data, callback) {
 
-            // TODO: line
             console.log(data);
 
+            activateMotors(data.leftDelta, data.rightDelta);
+
+            // TODO: validate
             // It's good, let the <canvas> make the virtual steps
             callback({'ok': true, 'data': data});
         });
