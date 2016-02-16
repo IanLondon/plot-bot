@@ -11,6 +11,14 @@ You can draw straight lines by clicking and dragging on the canvas (line will st
     moveRobotTo(getBipolarCoords(100,200));
     drawStraightLine(getBipolarCoords(100,100));
 
+## Running the node server
+Install node and npm. Then do:
+
+    npm install
+    node server.js
+
+Open up a browser to `localhost:3000` and start doodling.
+
 ## step()
 The fundamental stepping operation is `step(stepsLeft, stepsRight)`, where the arguments can be -1, 0, or +1. Eg `step(-1,1)` will retract the left stepper motor by one step and extend the right stepper motor by one step.
 
