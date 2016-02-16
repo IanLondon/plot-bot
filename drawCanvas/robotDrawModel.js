@@ -3,6 +3,9 @@ var canvas = document.getElementById("canvas1");
 var context = canvas.getContext("2d");
 var imageData = context.createImageData(canvas.width, canvas.height);
 
+// Begin socket.io connection (auto-discovery)
+var socket = io();
+
 canvas.addEventListener("mousedown", canvasMouseDown);
 canvas.addEventListener("mouseup", canvasMouseUp);
 
@@ -250,8 +253,6 @@ function step(stepsLeft, stepsRight) {
   //steps is positive -> extend string
   //steps is negative -> retract string
 
-  // TODO: connect johnny-five here!!!
-
   // if (!isInt(stepsLeft) || !isInt(stepsRight)) {
   //   throw new Error("Steps must be an integer! Got " + stepsLeft + ", " + stepsRight);
   // }
@@ -261,6 +262,9 @@ function step(stepsLeft, stepsRight) {
     throw new Error("Steps can only be -1, 0, or 1");
     // console.log("Warning: multiple steps at once...");
   }
+
+  // Emit a step event to the server
+  socket.emit('step', {'stepsLeft':stepsLeft, 'stepsRight': stepsRight});
 
   var prevStepDelta = stepDelta.slice();
 
