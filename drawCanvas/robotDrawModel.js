@@ -72,7 +72,8 @@ plotBot.WIDTH = canvas.width;
 // Keep track of steps from the origin position for left and right motors.
 // it should always be an integer. Negative values are OK.
 // TODO: store this variable in the plotBot namespace
-var stepDelta = [0,0];
+// XXX: this value is about center, for the original board resolution & size. May change.
+var stepDelta = [45, -29];
 
 function isInt(value) {
   // from krisk on http://stackoverflow.com/questions/14636536/how-to-check-if-a-variable-is-an-integer-in-javascript
@@ -264,19 +265,26 @@ function step(stepsLeft, stepsRight) {
   }
 
   // Emit a step event to the server
-  socket.emit('step', {'stepsLeft':stepsLeft, 'stepsRight': stepsRight});
+  socket.emit('step', {'stepsLeft':stepsLeft, 'stepsRight': stepsRight}, function(response) {
+      if (response.ok) {
+          console.log("got OK from server");
 
-  var prevStepDelta = stepDelta.slice();
+          var prevStepDelta = stepDelta.slice();
 
-  //Update stepDelta with new position
-  stepDelta[0] += stepsLeft;
-  stepDelta[1] += stepsRight;
+          //Update stepDelta with new position
+          stepDelta[0] += stepsLeft;
+          stepDelta[1] += stepsRight;
 
-  var newStepDelta = stepDelta.slice();
+          var newStepDelta = stepDelta.slice();
 
-  updateCursor();
-  drawSubsteps(prevStepDelta,newStepDelta);
-
+          updateCursor();
+          drawSubsteps(prevStepDelta,newStepDelta);
+      }
+      else {
+          console.log("non-ok response from server");
+          console.log(response)
+      }
+    });
 }
 
 function cartesianLength(x0,y0,x1,y1) {
