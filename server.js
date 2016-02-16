@@ -17,16 +17,17 @@ var board = new five.Board();
 
 board.on("ready", function() {
 
-// Initialize stepper motors
+    // Initialize stepper motors
 
-// WIRING:
-// Both steppers AABB is (from left to right)
-// brown, black, orange, yellow.
-//
-// Pot dialed min (cw) to lowest setting.
-//
-// M1 & M2 all grounded for full-step mode.
-
+    // WIRING:
+    // Both steppers AABB is (from left to right)
+    // brown, black, orange, yellow.
+    //
+    // Pot dialed min (cw) to lowest setting.
+    //
+    // M1 & M2 all grounded for full-step mode.
+    //
+    // The direction depends on your setup, you may have to swap extend_dir & retract_dir
     var stepperLeft = new five.Stepper({
         type: five.Stepper.TYPE.DRIVER,
         stepsPerRev: 48,
@@ -35,6 +36,10 @@ board.on("ready", function() {
             dir: 3
         }
     });
+    stepperLeft.extend_dir = five.Stepper.DIRECTION.CCW;
+    stepperLeft.retract_dir = five.Stepper.DIRECTION.CW;
+    stepperLeft.name = 'left';
+
 
     var stepperRight = new five.Stepper({
         type: five.Stepper.TYPE.DRIVER,
@@ -44,45 +49,72 @@ board.on("ready", function() {
             dir: 11
         }
     });
+    stepperRight.extend_dir = five.Stepper.DIRECTION.CW;
+    stepperRight.retract_dir = five.Stepper.DIRECTION.CCW;
+    stepperRight.name = 'right';
+
+    function activateMotors(stepsLeft, stepsRight) {
+        // positive steps are extensions, negative steps are retractions.
+        // XXX: this isn't DRY!
+        // left stepper CCW to extend (stepsLeft==1), CW to retract (stepsLeft==-1)
+
+        function eachStepper(stepperObj, stepsVal) {
+            var dir = 0;
+
+            if (stepsVal === 0) {
+                // skip ahead. 0 steps isn't an error, necessarily
+                return false;
+            }
+
+            // determine the direction from the sign of the stepsVal
+            if (stepsVal > 0) {
+                // extend if positive
+                dir = stepperObj.extend_dir;
+            } else {
+                // retract is negative
+                dir = stepperObj.retract_dir;
+            }
+
+            stepperObj.direction(dir).step(Math.abs(stepsVal), function(){
+                console.log(stepperObj.name + " " + stepsVal);
+            });
+        }
+        eachStepper(stepperLeft, stepsLeft);
+        eachStepper(stepperRight, stepsRight);
+    }
 
     io.on('connection', function (socket) {
+        // Single steps
         socket.on('step', function (data, callback) {
             // TODO: check that stepsLeft & stepsRight attributes exist in data
             if((data.stepsLeft !== 0 && Math.abs(data.stepsLeft) !== 1 ) ||
             (data.stepsRight !== 0 && Math.abs(data.stepsRight) !== 1)) {
-                console.log("WARNING: Bad step values. Skipping.");
-        } else {
+                console.log("WARNING: Bad single-step values. Skipping.");
+            } else {
+                // console.log(data);
+                activateMotors(data.stepsLeft, data.stepsRight);
+
+                // It's good, let the <canvas> make the virtual steps
+                callback({'ok': true, 'data': data});
+            }
+        });
+
+        // straight line
+        socket.on('line', function (data, callback) {
+
+            // TODO: line
             console.log(data);
-
-            // XXX: this isn't DRY!
-            // left stepper CW to extend (stepsLeft==1), CCW to retract (stepsLeft==-1)
-            if (Math.abs(data.stepsLeft) == 1) {
-                if (data.stepsLeft == 1) {
-                    // extend
-                    var leftDir = five.Stepper.DIRECTION.CW;
-                } else {
-                    // retract
-                    var leftDir = five.Stepper.DIRECTION.CCW;
-                }
-                stepperLeft.direction(leftDir).step(data.stepsLeft);
-            }
-
-            // right stepper does the opposite. Extend
-            if (Math.abs(data.stepsRight) == 1) {
-                if (data.stepsRight == 1) {
-                    // extend
-                    var rightDir = five.Stepper.DIRECTION.CCW;
-                } else {
-                    // retract
-                    var rightDir = five.Stepper.DIRECTION.CW;
-                }
-                stepperLeft.direction(rightDir).step(data.stepsRight);
-            }
 
             // It's good, let the <canvas> make the virtual steps
             callback({'ok': true, 'data': data});
-        }
-      });
+        });
+    });
+
+// Inject into repl for debugging
+    this.repl.inject({
+        stepperLeft: stepperLeft,
+        stepperRight: stepperRight,
+        activateMotors: activateMotors
     });
 });
 
