@@ -5,6 +5,10 @@ var path = require('path');
 var io = require('socket.io')(http);
 var five = require("johnny-five");
 
+// testing only
+// var mocks = require('mock-firmata');
+// var MockFirmata = mocks.Firmata;
+
 // TODO: rearrange directory structure to make "public" folder
 app.use(express.static('drawCanvas'));
 
@@ -16,7 +20,7 @@ app.get('/', function(req, res){
 var board = new five.Board();
 
 board.on("ready", function() {
-
+    console.log('board ready.');
     // Initialize stepper motors
 
     // WIRING:
@@ -53,12 +57,10 @@ board.on("ready", function() {
     stepperRight.retract_dir = five.Stepper.DIRECTION.CCW;
     stepperRight.name = 'right';
 
-    function activateMotors(stepsLeft, stepsRight) {
+    function activateMotors(stepsLeft, stepsRight, callback) {
         // positive steps are extensions, negative steps are retractions.
-        // XXX: this isn't DRY!
-        // left stepper CCW to extend (stepsLeft==1), CW to retract (stepsLeft==-1)
 
-        function eachStepper(stepperObj, stepsVal) {
+        function eachStepper(stepperObj, stepsVal, doneSteppingCallback) {
             var dir = 0;
 
             if (stepsVal === 0) {
@@ -71,16 +73,30 @@ board.on("ready", function() {
                 // extend if positive
                 dir = stepperObj.extend_dir;
             } else {
-                // retract is negative
+                // retract if negative
                 dir = stepperObj.retract_dir;
             }
 
             stepperObj.direction(dir).step(Math.abs(stepsVal), function(){
                 console.log(stepperObj.name + " " + stepsVal);
+                doneSteppingCallback();
             });
         }
-        eachStepper(stepperLeft, stepsLeft);
-        eachStepper(stepperRight, stepsRight);
+
+        if (Math.abs(stepsLeft) > Math.abs(stepsRight)) {
+            // left has more steps, assume it's the slower movement
+            // XXX: Acceleration of both steppers must be same for this assumption to hold
+            eachStepper(stepperLeft, stepsLeft, callback);
+            eachStepper(stepperRight, stepsRight, function(){
+                console.log('right is done stepping');
+            });
+        } else {
+            // right is the slower movement (or they finish at the same time)
+            eachStepper(stepperLeft, stepsLeft, function(){
+                console.log('left is done stepping');
+            });
+            eachStepper(stepperRight, stepsRight, callback);
+        }
     }
 
     io.on('connection', function (socket) {
@@ -92,10 +108,12 @@ board.on("ready", function() {
                 console.log("WARNING: Bad single-step values. Skipping.");
             } else {
                 // console.log(data);
-                activateMotors(data.stepsLeft, data.stepsRight);
+                activateMotors(data.stepsLeft, data.stepsRight, function(callback) {
+                    // It's good, let the <canvas> make the virtual steps
+                    // once the steppers are done moving.
+                    callback({'ok': true, 'data': data});
+                });
 
-                // It's good, let the <canvas> make the virtual steps
-                callback({'ok': true, 'data': data});
             }
         });
 
@@ -104,11 +122,10 @@ board.on("ready", function() {
 
             console.log(data);
 
-            activateMotors(data.leftDelta, data.rightDelta);
-
-            // TODO: validate
-            // It's good, let the <canvas> make the virtual steps
-            callback({'ok': true, 'data': data});
+            activateMotors(data.leftDelta, data.rightDelta, function(callback) {
+                // It's good, let the <canvas> make the virtual steps
+                callback({'ok': true, 'data': data});
+            });
         });
     });
 

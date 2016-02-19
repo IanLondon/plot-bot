@@ -13,6 +13,12 @@ lib-cov
 # Coverage directory used by tools like istanbul
 coverage
 
+# Bower components in drawCanvas
+drawCanvas/bower_components
+
+# Browse-IO directory
+browse-io
+
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
 

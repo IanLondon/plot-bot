@@ -285,8 +285,8 @@ function step(stepsLeft, stepsRight) {
 }
 
 function cartesianLength(x0, y0, x1, y1) {
-  // the distance formula!
-  return Math.sqrt(Math.pow(x1-x0,2)+Math.pow(y1-y0,2));
+    // the distance formula!
+    return Math.sqrt(Math.pow(x1-x0,2)+Math.pow(y1-y0,2));
 }
 
 function drawSubsteps(prevStepDelta,newStepDelta) {
@@ -343,7 +343,7 @@ function getCartesian(someStepDelta) {
 
 function updateCursor() {
   // FIXME bug: something weird happens when you pull
-  // the line enough to "stretch" it
+  // the line up too far (enough to "stretch" it)
 
   var coords = getCartesian(stepDelta);
 
