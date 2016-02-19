@@ -263,6 +263,7 @@ function step(stepsLeft, stepsRight) {
     }
 
     // Emit a step event to the server
+    console.log("requesting step from server...");
     socket.emit('step', {'stepsLeft':stepsLeft, 'stepsRight': stepsRight}, function(response) {
         if (response.ok) {
             console.log("got OK from server");
@@ -383,6 +384,7 @@ function drawStraightLine(destDelta) {
         'rightDelta': destDelta[1] - stepDelta[1]
     };
 
+    console.log("requesting straight line mvmt from server...");
     socket.emit('line', delta, function(response){
         if (response.ok) {
             console.log('ok line from server');
