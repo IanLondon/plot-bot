@@ -5,9 +5,17 @@ var path = require('path');
 var io = require('socket.io')(http);
 var five = require("johnny-five");
 
-// testing only
-// var mocks = require('mock-firmata');
-// var MockFirmata = mocks.Firmata;
+var DEBUG = false;
+
+if (process.argv.indexOf('debug') != -1) {
+    console.log("DEBUG mode. Using mock-firmata");
+    DEBUG = true;
+}
+
+if (DEBUG){
+    var mocks = require('mock-firmata');
+    var MockFirmata = mocks.Firmata;
+}
 
 // TODO: rearrange directory structure to make "public" folder
 app.use(express.static('drawCanvas'));
@@ -17,7 +25,22 @@ app.get('/', function(req, res){
 });
 
 // Initialize johnny-five board
-var board = new five.Board();
+if (DEBUG) {
+    // use MockFirmata
+    var board = new five.Board({
+        io: new MockFirmata({
+            // pins: [
+            //   {
+            //     supportedModes: [2,3,8,10,11]
+            //   }
+            // ]
+          }),
+          debug: false,
+          repl: false
+    });
+} else {
+    var board = new five.Board();
+}
 
 board.on("ready", function() {
     console.log('board ready.');
@@ -100,8 +123,10 @@ board.on("ready", function() {
     }
 
     io.on('connection', function (socket) {
+        console.log('io connection');
         // Single steps
         socket.on('step', function (data, callback) {
+            console.log('got step event from browser', data);
             // TODO: check that stepsLeft & stepsRight attributes exist in data
             if((data.stepsLeft !== 0 && Math.abs(data.stepsLeft) !== 1 ) ||
             (data.stepsRight !== 0 && Math.abs(data.stepsRight) !== 1)) {
@@ -129,13 +154,17 @@ board.on("ready", function() {
         });
     });
 
-// Inject into repl for debugging
-    this.repl.inject({
-        stepperLeft: stepperLeft,
-        stepperRight: stepperRight,
-        activateMotors: activateMotors
-    });
+// // Inject into repl for debugging
+//     this.repl.inject({
+//         stepperLeft: stepperLeft,
+//         stepperRight: stepperRight,
+//         activateMotors: activateMotors
+//     });
 });
+
+if (DEBUG) {
+    board.emit('ready');
+}
 
 http.listen(3000, function(){
     console.log('listening on *:3000');
