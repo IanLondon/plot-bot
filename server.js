@@ -5,18 +5,6 @@ var path = require('path');
 var io = require('socket.io')(http);
 var five = require("johnny-five");
 
-var DEBUG = false;
-
-if (process.argv.indexOf('debug') != -1) {
-    console.log("DEBUG mode. Using mock-firmata");
-    DEBUG = true;
-}
-
-if (DEBUG){
-    var mocks = require('mock-firmata');
-    var MockFirmata = mocks.Firmata;
-}
-
 // TODO: rearrange directory structure to make "public" folder
 app.use(express.static('drawCanvas'));
 
@@ -24,9 +12,19 @@ app.get('/', function(req, res){
   res.sendFile(path.join(__dirname, './drawCanvas/drawcanvas.html'));
 });
 
-// Initialize johnny-five board
+// Handle debug mode
+var DEBUG = false;
+
+if (process.argv.indexOf('debug') != -1) {
+    DEBUG = true;
+}
+
 if (DEBUG) {
     // use MockFirmata
+    console.log("DEBUG mode. Using mock-firmata");
+    var mocks = require('mock-firmata');
+    var MockFirmata = mocks.Firmata;
+
     var board = new five.Board({
         io: new MockFirmata({
             // pins: [
@@ -38,7 +36,14 @@ if (DEBUG) {
           debug: false,
           repl: false
     });
+
+    // monkey patch Stepper.step
+    var STEPPER_MOCK_DELAY = 250;
+    five.Stepper.prototype.step = function(steps, callback) {
+        setTimeout(callback, STEPPER_MOCK_DELAY);
+    };
 } else {
+    // Initialize johnny-five board
     var board = new five.Board();
 }
 
@@ -82,12 +87,12 @@ board.on("ready", function() {
 
     function activateMotors(stepsLeft, stepsRight, callback) {
         // positive steps are extensions, negative steps are retractions.
-
         function eachStepper(stepperObj, stepsVal, doneSteppingCallback) {
             var dir = 0;
 
             if (stepsVal === 0) {
                 // skip ahead. 0 steps isn't an error, necessarily
+                console.log('Zero stepsVal, for stepper "' + stepperObj.name + '", skipping.');
                 return false;
             }
 
@@ -101,7 +106,7 @@ board.on("ready", function() {
             }
 
             stepperObj.direction(dir).step(Math.abs(stepsVal), function(){
-                console.log(stepperObj.name + " " + stepsVal);
+                console.log(stepperObj.name + " " + stepsVal + ' completed.');
                 doneSteppingCallback();
             });
         }
@@ -125,31 +130,30 @@ board.on("ready", function() {
     io.on('connection', function (socket) {
         console.log('io connection');
         // Single steps
-        socket.on('step', function (data, callback) {
+        socket.on('step', function (data, socket_callback) {
             console.log('got step event from browser', data);
             // TODO: check that stepsLeft & stepsRight attributes exist in data
             if((data.stepsLeft !== 0 && Math.abs(data.stepsLeft) !== 1 ) ||
             (data.stepsRight !== 0 && Math.abs(data.stepsRight) !== 1)) {
                 console.log("WARNING: Bad single-step values. Skipping.");
             } else {
-                // console.log(data);
-                activateMotors(data.stepsLeft, data.stepsRight, function(callback) {
+                activateMotors(data.stepsLeft, data.stepsRight, function() {
                     // It's good, let the <canvas> make the virtual steps
                     // once the steppers are done moving.
-                    callback({'ok': true, 'data': data});
+                    socket_callback({'ok': true, 'data': data});
                 });
 
             }
         });
 
         // straight line
-        socket.on('line', function (data, callback) {
+        socket.on('line', function (data, socket_callback) {
 
             console.log(data);
 
-            activateMotors(data.leftDelta, data.rightDelta, function(callback) {
+            activateMotors(data.leftDelta, data.rightDelta, function() {
                 // It's good, let the <canvas> make the virtual steps
-                callback({'ok': true, 'data': data});
+                socket_callback({'ok': true, 'data': data});
             });
         });
     });
