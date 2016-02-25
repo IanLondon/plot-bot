@@ -37,13 +37,13 @@ if (DEBUG) {
           repl: false
     });
 
-    // monkey patch Stepper.step
+    // monkey patch Stepper.step so that callbacks work in mock mode
     var STEPPER_MOCK_DELAY = 250;
     five.Stepper.prototype.step = function(steps, callback) {
         setTimeout(callback, STEPPER_MOCK_DELAY);
     };
 } else {
-    // Initialize johnny-five board
+    // Use a real, non-mock johnny-five board
     var board = new five.Board();
 }
 
@@ -149,6 +149,7 @@ board.on("ready", function() {
         // straight line
         socket.on('line', function (data, socket_callback) {
 
+            console.log('drawing line with data: ');
             console.log(data);
 
             activateMotors(data.leftDelta, data.rightDelta, function() {

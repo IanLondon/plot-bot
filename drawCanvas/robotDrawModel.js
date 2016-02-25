@@ -5,6 +5,7 @@ var imageData = context.createImageData(canvas.width, canvas.height);
 
 // Begin socket.io connection (auto-discovery)
 var socket = io();
+console.log("TODO: get robot coordinates from server upon connection");
 
 // canvas.addEventListener("mousedown", canvasMouseDown);
 canvas.addEventListener("mouseup", canvasMouseUp);
@@ -22,7 +23,9 @@ function canvasMouseUp(event) {
   // draw a line from the "current position" stepDelta to given destDelta.
   var mouseupCoords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
 
-  drawStraightLine( getBipolarCoords(mouseupCoords[0], mouseupCoords[1]));
+  drawStraightLine( getBipolarCoords(mouseupCoords[0], mouseupCoords[1]), function(){
+      console.log('line drawn.');
+  });
 }
 
 document.body.onkeydown = function(event){
@@ -375,9 +378,10 @@ for (var i = 0; i < 1000; i+=plotBot.STEP_LEN) {
   drawArc(plotBot.WIDTH, 0, i, 0, 2*Math.PI, false);
 }
 
-function drawStraightLine(destDelta) {
-    // TODO: Draws an approximately straight line between
-    // but the "straightness" isn't implemented anymore.
+function drawStraightLine(destDelta, callback) {
+    // Draws an approximately straight line with both motors simultaneously.
+    // The robot's real-life line isn't perfect,
+    // but we draw it as a straight line on the canvas.
 
     delta = {
         'leftDelta': destDelta[0] - stepDelta[0],
@@ -388,13 +392,23 @@ function drawStraightLine(destDelta) {
     socket.emit('line', delta, function(response){
         if (response.ok) {
             console.log('ok line from server');
+
+            // Canvas draw, without using step()
+            context.beginPath();
+            var startCoords = getCartesian(stepDelta);
+            var endCoords = getCartesian(destDelta);
+            context.moveTo(startCoords.x, startCoords.y);
+            context.lineTo(endCoords.x, endCoords.y);
+            context.strokeStyle = "rgba(190, 36, 210, 0.6)";
+            context.stroke();
+
             // update the stepDelta
             stepDelta = destDelta.slice();
 
-            // TODO: canvas draw again, without using step()
-            console.log("TODO: drawStraightLine on canvas again.");
+            // execute the callback
+            callback();
         } else {
-            console.log('line error');
+            console.log('line error from server: ' + response);
         }
     });
 
