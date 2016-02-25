@@ -5,7 +5,7 @@ var imageData = context.createImageData(canvas.width, canvas.height);
 
 // Begin socket.io connection (auto-discovery)
 var socket = io();
-console.log("TODO: get robot coordinates from server upon connection");
+console.log("TODO: get robot coordinates & draw area info from server upon connection");
 
 // canvas.addEventListener("mousedown", canvasMouseDown);
 canvas.addEventListener("mouseup", canvasMouseUp);
@@ -57,198 +57,201 @@ document.body.onkeydown = function(event){
 
 var plotBot = {};
 
-plotBot.STEP_LEN = 10;
+plotBot.STEP_LEN = 1;
 
+// TODO: not currently in use, remove!
 // Cartesian resolution sets the granularity when approximating a straight line.
 // =STEP_LEN*4 is a rule of thumb, it can be set differently depending on the drawing
 // and configuration.
-plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 4;
+// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 4;
 
 // Color as used by context.strokeStyle (right now, used only by drawSubsteps)
 plotBot.COLOR = "rgba(255,0,0,0.25)";
 
 // horizontal dist btw the 2 stepper motors.
-plotBot.WIDTH = canvas.width;
+// if width is 800px for about 9 feet,
+// plotBot.WIDTH = canvas.width;
+plotBot.WIDTH = 2743; //mm
 
 // Keep track of steps from the origin position for left and right motors.
 // it should always be an integer. Negative values are OK.
 // TODO: store this variable in the plotBot namespace
 // XXX: this value is about center, for the original board resolution & size. May change.
-var stepDelta = [45, -29];
+var stepDelta = [430/plotBot.STEP_LEN, -300/plotBot.STEP_LEN];
 
 function isInt(value) {
   // from krisk on http://stackoverflow.com/questions/14636536/how-to-check-if-a-variable-is-an-integer-in-javascript
   return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value));
 }
 
-function intChunk(total, segments) {
-  // Given a total value (integer) and a number of segments, build an array of integers
-  // which are as close as possible to each other, which sum to the given total.
-  // Eg intChunk(20,8) --> [ 3, 3, 3, 3, 2, 2, 2, 2 ].
-  // Negative values for 'total' are fine -- all the elements will be negative
-
-  // This is useful when chunking steps to draw a line in a Bresenham-inspired way!
-
-  if (segments < 0 || !isInt(segments)) {
-    throw new Error("intChunk needs 'segments' to be a positive integer. Got " + segments);
-  }
-
-  if (total === 0 || !isInt(total)) {
-    throw new Error("intChunk needs nonzero integer 'total'. Got " + total);
-  }
-
-  // Create and populate chunkArray with minimum values
-  var chunkArray = [];
-  var isPositive = (total > 0);
-  // Math.floor rounds negative numbers up: -2.5 --> -3. So use Math.ceil for negatives.
-  var initialVal = isPositive ? Math.floor(total/segments) : Math.ceil(total/segments);
-  for (var i=0; i<segments; i++) {
-    chunkArray.push(initialVal);
-  }
-
-  // Go thru array incrementing each element by 1 (if positive) or -1 (if neg)
-  // until the sum of the array reaches the value or 'sum'.
-  var signedAdder = isPositive ? 1 : -1;
-  var runningSum = Math.abs(initialVal * segments);
-  var index = 0;
-  while (runningSum < Math.abs(total)) {
-    chunkArray[index] += signedAdder;
-    index = (index + 1 == segments) ? 0 : index + 1;
-    runningSum++;
-  }
-
-  return chunkArray;
-}
+// function intChunk(total, segments) {
+//   // Given a total value (integer) and a number of segments, build an array of integers
+//   // which are as close as possible to each other, which sum to the given total.
+//   // Eg intChunk(20,8) --> [ 3, 3, 3, 3, 2, 2, 2, 2 ].
+//   // Negative values for 'total' are fine -- all the elements will be negative
+//
+//   // This is useful when chunking steps to draw a line in a Bresenham-inspired way!
+//
+//   if (segments < 0 || !isInt(segments)) {
+//     throw new Error("intChunk needs 'segments' to be a positive integer. Got " + segments);
+//   }
+//
+//   if (total === 0 || !isInt(total)) {
+//     throw new Error("intChunk needs nonzero integer 'total'. Got " + total);
+//   }
+//
+//   // Create and populate chunkArray with minimum values
+//   var chunkArray = [];
+//   var isPositive = (total > 0);
+//   // Math.floor rounds negative numbers up: -2.5 --> -3. So use Math.ceil for negatives.
+//   var initialVal = isPositive ? Math.floor(total/segments) : Math.ceil(total/segments);
+//   for (var i=0; i<segments; i++) {
+//     chunkArray.push(initialVal);
+//   }
+//
+//   // Go thru array incrementing each element by 1 (if positive) or -1 (if neg)
+//   // until the sum of the array reaches the value or 'sum'.
+//   var signedAdder = isPositive ? 1 : -1;
+//   var runningSum = Math.abs(initialVal * segments);
+//   var index = 0;
+//   while (runningSum < Math.abs(total)) {
+//     chunkArray[index] += signedAdder;
+//     index = (index + 1 == segments) ? 0 : index + 1;
+//     runningSum++;
+//   }
+//
+//   return chunkArray;
+// }
 
   // TODO: Make another function that divides a cartesian line into samples,
   // Use plotBot.CARTESIAN_RESOLUTION to determine how many samples to make,
   // each sample is an arc where the endpoints are integer bipolar approximations
   // of the cartesian line.
 
-function moveRobotTo(destDelta) {
-  // Negotiate a "symmetrical" path of step()'s to get from current stepDelta
-  // to destDelta (destination): prefers to move both motors at once, and to
-  // distribute the single-motor motions evenly along the path.
-
-  // XXX: This is really just for the HTML canvas simulator, the steppers can be run simultaneously & asychronously with johnny-five... maybe.
-
-  // TODO: Verify that the destDelta is an array of 2 integers, and that it is
-  // within the bounds of the drawing area.
-
-  var stepDisplacement, stepDirection;
-  var totalSteps, totalDualSteps, totalSingleSteps, singleStepMotorIndex;
-  var biggerStepIndex, smallerStepIndex;
-  var primaryMvmt, secondaryMvmt;
-  var primaryIsDual;
-
-  stepDisplacement = _.map(stepDelta, function(currentVal,index) {
-    return destDelta[index] - currentVal;
-  });
-
-  stepDirection = _.map(stepDisplacement, function(steps) {
-    if (steps < 0) return -1;
-    else if (steps > 0) return 1;
-    else return 0;
-  });
-
-  totalSteps = _.map(stepDisplacement, function(steps) {
-    return Math.abs(steps);
-  });
-
-  if (totalSteps[0] >= totalSteps[1]) {
-    biggerStepIndex = 0;
-    smallerStepIndex = 1;
-  } else {
-    biggerStepIndex = 1;
-    smallerStepIndex = 0;
-  }
-  singleStepIndex = biggerStepIndex;
-  totalSingleSteps = totalSteps[biggerStepIndex] - totalSteps[smallerStepIndex];
-  totalDualSteps = totalSteps[smallerStepIndex];
-
-  if (totalDualSteps === 0 || totalSingleSteps === 0) {
-    secondaryMvmt = [];
-    if (totalDualSteps === totalSingleSteps) {
-      // TODO: moveRobotTo gets 0 steps all the time. Handle this earlier!
-      console.log("weird, moveRobotTo got 0 steps...");
-      return false;
-    }
-    else if (totalDualSteps > totalSingleSteps) {
-      primaryMvmt = [totalDualSteps];
-      primaryIsDual = true;
-    } else {
-      primaryMvmt = [totalSingleSteps];
-      primaryIsDual = false;
-    }
-  }
-  else if (totalDualSteps < totalSingleSteps) {
-    secondaryMvmt = intChunk(totalDualSteps, totalDualSteps);
-    primaryMvmt = intChunk(totalSingleSteps, totalDualSteps+1);
-    primaryIsDual = false;
-  } else {
-    secondaryMvmt = intChunk(totalSingleSteps, totalSingleSteps);
-    primaryMvmt = intChunk(totalDualSteps, totalSingleSteps+1);
-    primaryIsDual = true;
-  }
-
-  // console.log({primaryMvmt:primaryMvmt, secondaryMvmt:secondaryMvmt});
-
-
-  function dualStep() {
-    // stepDelta = _.map(stepDelta, function(currentVal, index){
-    //   return currentVal + stepDirection[index];
-    // });
-    step(stepDirection[0], stepDirection[1]);
-  }
-
-  function singleStep() {
-    // stepDelta[singleStepIndex] += stepDirection[singleStepIndex];
-    if (singleStepIndex === 0) {
-      step(stepDirection[0],0);
-    } else {
-      step(0, stepDirection[1]);
-    }
-  }
-
-  // move the canvas "cursor" to the beginning stepDelta
-  context.beginPath();
-  context.strokeStyle = "rgba(255,0,100,1)";
-  context.moveTo(stepDelta[0], stepDelta[1]);
-
-  _.forEach(secondaryMvmt, function(secondarySteps,index) {
-    if (primaryIsDual) {
-      // execute primary mvmt. it's dual.
-      _.times(primaryMvmt[index], dualStep);
-
-      // execute secondary mvmt. it's single.
-      // since secondary mvmt contains only one step, just call it once.
-      singleStep();
-    }
-    else {
-      // primary is singleStep, secondary mvmt is dualStep.
-      _.times(primaryMvmt[index], singleStep);
-      dualStep();
-    }
-
-  });
-  // there's always one more movement chunk in primaryMvmt than in secondaryMvmt
-  // so make that last movement now:
-  // TODO use _.last(primaryMvmt) instead
-    if (primaryIsDual) {
-      _.times(primaryMvmt[primaryMvmt.length - 1], dualStep);
-    } else {
-      _.times(primaryMvmt[primaryMvmt.length - 1], singleStep);
-    }
-
-    // debug!
-    // console.log("robot moved to");
-    // console.log(stepDelta.slice(0));
-
-    if(stepDelta[0] !== destDelta[0] || stepDelta[1] !== destDelta[1]) {
-      console.log("...but should have moved to step delta " + destDelta[0] + ", " + destDelta[1]);
-      console.log("moveRobotTo() did not wind up at destination!");
-    }
-}
+// function moveRobotTo(destDelta) {
+//   // Negotiate a "symmetrical" path of step()'s to get from current stepDelta
+//   // to destDelta (destination): prefers to move both motors at once, and to
+//   // distribute the single-motor motions evenly along the path.
+//
+//   // XXX: This is really just for the HTML canvas simulator, the steppers can be run simultaneously & asychronously with johnny-five... maybe.
+//
+//   // TODO: Verify that the destDelta is an array of 2 integers, and that it is
+//   // within the bounds of the drawing area.
+//
+//   var stepDisplacement, stepDirection;
+//   var totalSteps, totalDualSteps, totalSingleSteps, singleStepMotorIndex;
+//   var biggerStepIndex, smallerStepIndex;
+//   var primaryMvmt, secondaryMvmt;
+//   var primaryIsDual;
+//
+//   stepDisplacement = _.map(stepDelta, function(currentVal,index) {
+//     return destDelta[index] - currentVal;
+//   });
+//
+//   stepDirection = _.map(stepDisplacement, function(steps) {
+//     if (steps < 0) return -1;
+//     else if (steps > 0) return 1;
+//     else return 0;
+//   });
+//
+//   totalSteps = _.map(stepDisplacement, function(steps) {
+//     return Math.abs(steps);
+//   });
+//
+//   if (totalSteps[0] >= totalSteps[1]) {
+//     biggerStepIndex = 0;
+//     smallerStepIndex = 1;
+//   } else {
+//     biggerStepIndex = 1;
+//     smallerStepIndex = 0;
+//   }
+//   singleStepIndex = biggerStepIndex;
+//   totalSingleSteps = totalSteps[biggerStepIndex] - totalSteps[smallerStepIndex];
+//   totalDualSteps = totalSteps[smallerStepIndex];
+//
+//   if (totalDualSteps === 0 || totalSingleSteps === 0) {
+//     secondaryMvmt = [];
+//     if (totalDualSteps === totalSingleSteps) {
+//       // TODO: moveRobotTo gets 0 steps all the time. Handle this earlier!
+//       console.log("weird, moveRobotTo got 0 steps...");
+//       return false;
+//     }
+//     else if (totalDualSteps > totalSingleSteps) {
+//       primaryMvmt = [totalDualSteps];
+//       primaryIsDual = true;
+//     } else {
+//       primaryMvmt = [totalSingleSteps];
+//       primaryIsDual = false;
+//     }
+//   }
+//   else if (totalDualSteps < totalSingleSteps) {
+//     secondaryMvmt = intChunk(totalDualSteps, totalDualSteps);
+//     primaryMvmt = intChunk(totalSingleSteps, totalDualSteps+1);
+//     primaryIsDual = false;
+//   } else {
+//     secondaryMvmt = intChunk(totalSingleSteps, totalSingleSteps);
+//     primaryMvmt = intChunk(totalDualSteps, totalSingleSteps+1);
+//     primaryIsDual = true;
+//   }
+//
+//   // console.log({primaryMvmt:primaryMvmt, secondaryMvmt:secondaryMvmt});
+//
+//
+//   function dualStep() {
+//     // stepDelta = _.map(stepDelta, function(currentVal, index){
+//     //   return currentVal + stepDirection[index];
+//     // });
+//     step(stepDirection[0], stepDirection[1]);
+//   }
+//
+//   function singleStep() {
+//     // stepDelta[singleStepIndex] += stepDirection[singleStepIndex];
+//     if (singleStepIndex === 0) {
+//       step(stepDirection[0],0);
+//     } else {
+//       step(0, stepDirection[1]);
+//     }
+//   }
+//
+//   // move the canvas "cursor" to the beginning stepDelta
+//   context.beginPath();
+//   context.strokeStyle = "rgba(255,0,100,1)";
+//   context.moveTo(stepDelta[0], stepDelta[1]);
+//
+//   _.forEach(secondaryMvmt, function(secondarySteps,index) {
+//     if (primaryIsDual) {
+//       // execute primary mvmt. it's dual.
+//       _.times(primaryMvmt[index], dualStep);
+//
+//       // execute secondary mvmt. it's single.
+//       // since secondary mvmt contains only one step, just call it once.
+//       singleStep();
+//     }
+//     else {
+//       // primary is singleStep, secondary mvmt is dualStep.
+//       _.times(primaryMvmt[index], singleStep);
+//       dualStep();
+//     }
+//
+//   });
+//   // there's always one more movement chunk in primaryMvmt than in secondaryMvmt
+//   // so make that last movement now:
+//   // TODO use _.last(primaryMvmt) instead
+//     if (primaryIsDual) {
+//       _.times(primaryMvmt[primaryMvmt.length - 1], dualStep);
+//     } else {
+//       _.times(primaryMvmt[primaryMvmt.length - 1], singleStep);
+//     }
+//
+//     // debug!
+//     // console.log("robot moved to");
+//     // console.log(stepDelta.slice(0));
+//
+//     if(stepDelta[0] !== destDelta[0] || stepDelta[1] !== destDelta[1]) {
+//       console.log("...but should have moved to step delta " + destDelta[0] + ", " + destDelta[1]);
+//       console.log("moveRobotTo() did not wind up at destination!");
+//     }
+// }
 
 function step(stepsLeft, stepsRight) {
     // Performs a single step with one or both motors.
