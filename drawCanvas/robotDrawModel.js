@@ -59,25 +59,17 @@ var plotBot = {};
 
 plotBot.STEP_LEN = 1;
 
-// TODO: not currently in use, remove!
-// Cartesian resolution sets the granularity when approximating a straight line.
-// =STEP_LEN*4 is a rule of thumb, it can be set differently depending on the drawing
-// and configuration.
-// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 4;
-
 // Color as used by context.strokeStyle (right now, used only by drawSubsteps)
 plotBot.COLOR = "rgba(255,0,0,0.25)";
 
 // horizontal dist btw the 2 stepper motors.
-// if width is 800px for about 9 feet,
 // plotBot.WIDTH = canvas.width;
 plotBot.WIDTH = 2743; //mm
 
 // Keep track of steps from the origin position for left and right motors.
 // it should always be an integer. Negative values are OK.
-// TODO: store this variable in the plotBot namespace
 // XXX: this value is about center, for the original board resolution & size. May change.
-var stepDelta = [430/plotBot.STEP_LEN, -300/plotBot.STEP_LEN];
+plotBot.stepDelta = [430/plotBot.STEP_LEN, -300/plotBot.STEP_LEN];
 
 function isInt(value) {
   // from krisk on http://stackoverflow.com/questions/14636536/how-to-check-if-a-variable-is-an-integer-in-javascript
@@ -274,13 +266,13 @@ function step(stepsLeft, stepsRight) {
         if (response.ok) {
             console.log("got OK from server");
 
-            var prevStepDelta = stepDelta.slice();
+            var prevStepDelta = plotBot.stepDelta.slice();
 
             //Update stepDelta with new position
-            stepDelta[0] += stepsLeft;
-            stepDelta[1] += stepsRight;
+            plotBot.stepDelta[0] += stepsLeft;
+            plotBot.stepDelta[1] += stepsRight;
 
-            var newStepDelta = stepDelta.slice();
+            var newStepDelta = plotBot.stepDelta.slice();
 
             updateCursor();
             drawSubsteps(prevStepDelta,newStepDelta);
@@ -352,7 +344,7 @@ function updateCursor() {
   // FIXME bug: something weird happens when you pull
   // the line up too far (enough to "stretch" it)
 
-  var coords = getCartesian(stepDelta);
+  var coords = getCartesian(plotBot.stepDelta);
 
   // draw the cursor position
   context.strokeStyle = "rgba(0, 0, 0, 0.10)";
@@ -387,8 +379,8 @@ function drawStraightLine(destDelta, callback) {
     // but we draw it as a straight line on the canvas.
 
     delta = {
-        'leftDelta': destDelta[0] - stepDelta[0],
-        'rightDelta': destDelta[1] - stepDelta[1]
+        'leftDelta': destDelta[0] - plotBot.stepDelta[0],
+        'rightDelta': destDelta[1] - plotBot.stepDelta[1]
     };
 
     console.log("requesting straight line mvmt from server...");
@@ -398,15 +390,15 @@ function drawStraightLine(destDelta, callback) {
 
             // Canvas draw, without using step()
             context.beginPath();
-            var startCoords = getCartesian(stepDelta);
+            var startCoords = getCartesian(plotBot.stepDelta);
             var endCoords = getCartesian(destDelta);
             context.moveTo(startCoords.x, startCoords.y);
             context.lineTo(endCoords.x, endCoords.y);
             context.strokeStyle = "rgba(190, 36, 210, 0.6)";
             context.stroke();
 
-            // update the stepDelta
-            stepDelta = destDelta.slice();
+            // update the plotBot.stepDelta
+            plotBot.stepDelta = destDelta.slice();
 
             // execute the callback
             callback();
@@ -467,42 +459,3 @@ function drawStraightLine(destDelta, callback) {
 //   });
 //
 // }
-
-//===========DEBUG TESTS=============
-
-// a horizonal-ish line
-// plotBot.COLOR = "rgba(0,255,255,0.25)";
-// stepDelta = [10,-5];
-// moveRobotTo([57,-55]);
-
-//==== horizonal-ish, lower. ====
-// the ideal cartesian line
-// context.strokeStyle = "pink";
-// context.moveTo(79, 272);
-// context.lineTo(627,269);
-// context.stroke();
-// // this is a "native" stepper line
-// plotBot.COLOR = "rgba(0,0,255,0.25)";
-// stepDelta = getBipolarCoords(79, 272);
-// moveRobotTo(getBipolarCoords(627, 269));
-
-// now try to approximate it
-// plotBot.COLOR = "rgba(50,255,0,0.25)";
-// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 1;
-// stepDelta = getBipolarCoords(79, 272);
-// drawStraightLine(getBipolarCoords(627, 269));
-//
-// plotBot.COLOR = "rgba(0,255,0,0.25)";
-// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 5;
-// stepDelta = getBipolarCoords(79, 290);
-// drawStraightLine(getBipolarCoords(627, 290));
-//
-// plotBot.COLOR = "rgba(0,0,255,0.25)";
-// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 10;
-// stepDelta = getBipolarCoords(79, 315);
-// drawStraightLine(getBipolarCoords(627, 315));
-//
-// plotBot.COLOR = "rgba(255,0,255,0.25)";
-// plotBot.CARTESIAN_RESOLUTION = plotBot.STEP_LEN * 15;
-// stepDelta = getBipolarCoords(79, 330);
-// drawStraightLine(getBipolarCoords(627, 330));
