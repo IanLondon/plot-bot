@@ -4,9 +4,38 @@ var context = canvas.getContext("2d");
 var imageData = context.createImageData(canvas.width, canvas.height);
 
 var virtualBot = {
-    cursorPos: [0,0],
+    cursorPos: [0,0], // this is the current position in relative Cartesian coordinates.
     lineColor: "rgba(190, 36, 210, 0.6)",
-    scaleFactor: 1, //this will be changed up update event.
+    scaleFactor: 1, //this will be changed up update event. it's pixels/Cartesian
+};
+
+virtualBot.cartesianToPixel = function(coords) {
+    // Convert relative Cartesian coordinates [x,y]
+    // to pixel coordinates for the <canvas>: [x_pix, y_pix]
+    return [coords[0]*this.scaleFactor, coords[1]*this.scaleFactor];
+};
+
+virtualBot.pixelToCartesian = function(coords) {
+    // Convert relative Cartesian coordinates [x,y]
+    // to pixel coordinates for the <canvas>: [x_pix, y_pix]
+    return [coords[0]/this.scaleFactor, coords[1]/this.scaleFactor];
+};
+
+virtualBot.updateCursor = function(dest) {
+    // takes the server's response containing {x:123, y:234}
+    // where x & y are relative Cartesian coordinates.
+    // Draws a line from the previous position to the destination,
+    // converting to pixel coordinates.
+    var startPos = this.cartesianToPixel(this.cursorPos);
+    var destPos = this.cartesianToPixel([dest.x, dest.y]);
+
+    context.beginPath();
+    context.moveTo(startPos[0], startPos[1]);
+    context.lineTo(destPos[0], destPos[1]);
+    context.strokeStyle = this.lineColor;
+    context.stroke();
+    // update virtual cursor
+    this.cursorPos = [dest.x, dest.y];
 };
 
 // canvas.addEventListener("mousedown", canvasMouseDown);
@@ -86,6 +115,7 @@ function scaleCanvas(height, width) {
 }
 
 socket.on('update', function(data) {
+    // Get an updated cursor position and canvas (drawing area) dimensions from server
     console.log("update from server.");
     console.log(data);
     virtualBot.cursorPos = data.coords;
@@ -121,32 +151,22 @@ function step(stepsLeft, stepsRight) {
     });
 }
 
-
-function updateCursor(dest) {
-    // takes the server's response and updates the cursor,
-    // drawing a line from the previous position
-    context.beginPath();
-    context.moveTo(virtualBot.cursorPos[0], virtualBot.cursorPos[1]);
-    context.lineTo(dest.x, dest.y);
-    context.strokeStyle = virtualBot.lineColor;
-    context.stroke();
-    // update virtual cursor
-    virtualBot.cursorPos = [dest.x, dest.y];
-}
-
-function drawStraightLine(x, y, callback) {
+function drawStraightLine(x_pix, y_pix, callback) {
     // Draws an approximately straight line with both motors simultaneously.
-    // (x,y) is the destination.
+    // (x_pix,y_pix) is the destination in pixel coordinates.
 
     // The robot's real-life line isn't perfect,
     // but we draw it as a straight line on the canvas.
 
+    // convert to relative Cartesian coordinates
+    cartesianCoords = virtualBot.pixelToCartesian([x_pix, y_pix]);
+
     console.log("requesting straight line mvmt from server...");
-    socket.emit('line', {x:x, y:y}, function(response){
+    socket.emit('line', {x:cartesianCoords[0], y:cartesianCoords[1]}, function(response){
         if (response.status == 'ok') {
             console.log('ok line from server');
             console.log(response);
-            updateCursor(response.dest);
+            virtualBot.updateCursor(response.dest);
 
             // execute the callback
             callback();
