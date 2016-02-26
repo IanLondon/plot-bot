@@ -167,6 +167,7 @@ function step(stepsLeft, stepsRight) {
 function updateCursor(dest) {
     // takes the server's response and updates the cursor,
     // drawing a line from the previous position
+    context.beginPath();
     context.moveTo(virtualBot.cursorPos[0], virtualBot.cursorPos[1]);
     context.lineTo(dest.x, dest.y);
     context.strokeStyle = virtualBot.lineColor;

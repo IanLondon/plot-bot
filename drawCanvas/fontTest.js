@@ -8,10 +8,10 @@ function drawLoop(drawIndex) {
         console.log('exiting drawLoop');
         return false;
     }
-    var nextCoords = getBipolarCoords(drawCoords[drawIndex].x, drawCoords[drawIndex].y);
-    console.log('nextCoords (bipolar):');
+    var nextCoords = [drawCoords[drawIndex].x, drawCoords[drawIndex].y];
+    console.log('nextCoords (relative cartesian):');
     console.log(nextCoords);
-    drawStraightLine(nextCoords, function(){
+    drawStraightLine(nextCoords[0], nextCoords[1], function(){
         drawLoop(drawIndex+1);
     });
 }
