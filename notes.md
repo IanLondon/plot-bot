@@ -41,6 +41,7 @@ The client also has to remember to scale the "true" relative Cartesian coordinat
 * ~~The server should represent the drawing area: width, height, displacement from robot origin. Also should represent step length (in mm) and pulley-to-pulley distance.~~
 * ~~Modify fontTest.js to work with the new setup.~~
 * ~~Fix the weird line thickening glitch - for some reason all old lines get stroked as drawing progresses.~~
-* Make the canvas scaling work correctly. Also, the canvas scale should be used to multiply the Cartesian coordinates when you make commands - otherwise you're doing a 1:1 pixel:Cartesian ratio, which would require a roughly 1220x2438 pixel canvas for the 4"x8" whiteboard!
+* ~~Make the canvas scaling work correctly. Also, the canvas scale should be used to multiply the Cartesian coordinates when you make commands - otherwise you're doing a 1:1 pixel:Cartesian ratio, which would require a roughly 1220x2438 pixel canvas for the 4"x8" whiteboard!~~
 * ~~Make activateMotors set the new stepDelta itself - it should be a comprehensive function. You might want to break it up into smaller functions -- but only call one function per movement command. Work it out.~~
-* Make activateMotors scale the velocity of the steppers so the "slow" one is at max speed and the "fast" one is scaled down -- they should complete at the same time, or else you get weird L-shaped lines when their # of steps are unequal and one finished first.
+* ~~Make activateMotors scale the velocity of the steppers so the "slow" one is at max speed and the "fast" one is scaled down -- they should complete at the same time, or else you get weird L-shaped lines when their # of steps are unequal and one finished first.~~
+* When you send a 'line' event to the server while the robot is already moving, it interrupts the movement and (the client, at least) loses track of its position. Don't let the client do that. ??? Deny overlapping requests and have the client requeue itself. ???

@@ -6,6 +6,8 @@ var io = require('socket.io')(http);
 var five = require("johnny-five");
 var plotbot = require("./plotbot.js");
 
+var MAX_RPM = 60; //max RPM for stepper motors
+
 // TODO: rearrange directory structure to make "public" folder
 app.use(express.static('drawCanvas'));
 
@@ -78,7 +80,8 @@ board.on("ready", function() {
         pins: {
             step: 2,
             dir: 3
-        }
+        },
+        rpm: MAX_RPM,
     });
     stepperLeft.extend_dir = five.Stepper.DIRECTION.CCW;
     stepperLeft.retract_dir = five.Stepper.DIRECTION.CW;
@@ -90,7 +93,9 @@ board.on("ready", function() {
         pins: {
             step: 10,
             dir: 11
-        }
+        },
+        rpm: MAX_RPM,
+
     });
     stepperRight.extend_dir = five.Stepper.DIRECTION.CW;
     stepperRight.retract_dir = five.Stepper.DIRECTION.CCW;
@@ -98,7 +103,11 @@ board.on("ready", function() {
 
     function activateMotors(stepsLeft, stepsRight, callback) {
         // positive steps are extensions, negative steps are retractions.
-        function eachStepper(stepperObj, stepsVal, doneSteppingCallback) {
+        function eachStepper(stepperObj, stepsVal, rpms, doneSteppingCallback) {
+            if (typeof rpms != 'number') {
+                throw new Error("rpms must be a number");
+            }
+
             var dir = 0;
 
             if (stepsVal === 0) {
@@ -116,25 +125,29 @@ board.on("ready", function() {
                 dir = stepperObj.retract_dir;
             }
 
-            stepperObj.direction(dir).step(Math.abs(stepsVal), function(){
-                console.log(stepperObj.name + " " + stepsVal + ' completed.');
+
+            stepperObj.direction(dir).rpm(rpms).step(Math.abs(stepsVal), function(){
+                console.log(stepperObj.name + " " + stepsVal + ' completed. RPM: ' + rpms);
                 doneSteppingCallback();
             });
         }
 
+        var slow_rpms;
+
         if (Math.abs(stepsLeft) > Math.abs(stepsRight)) {
-            // left has more steps, assume it's the slower movement
-            // XXX: Acceleration of both steppers must be same for this assumption to hold
-            eachStepper(stepperLeft, stepsLeft, callback);
-            eachStepper(stepperRight, stepsRight, function(){
+            // left has more steps, it's the "longer" movement
+            eachStepper(stepperLeft, stepsLeft, MAX_RPM, callback);
+            slow_rpms = MAX_RPM * Math.abs(stepsRight/stepsLeft);
+            eachStepper(stepperRight, stepsRight, slow_rpms, function(){
                 console.log('right is done stepping');
             });
         } else {
-            // right is the slower movement (or they finish at the same time)
-            eachStepper(stepperLeft, stepsLeft, function(){
+            // right is the "longer" movement (or they finish at the same time)
+            slow_rpms = MAX_RPM * Math.abs(stepsLeft/stepsRight);
+            eachStepper(stepperLeft, stepsLeft, slow_rpms, function(){
                 console.log('left is done stepping');
             });
-            eachStepper(stepperRight, stepsRight, callback);
+            eachStepper(stepperRight, stepsRight, MAX_RPM, callback);
         }
 
         // finally, update the stepDelta
