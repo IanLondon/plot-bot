@@ -33,7 +33,7 @@ The client/canvas holds the present position of the robot's cursor as `plotBot.c
 ***
 
 # TODO
-* Backup the old files just to be safe, then delete all the commented out old code
-* Move all the bipolar coordinate functions in robotDrawModel.js to server.js -- the client/canvas should only keep track of bipolar coordinates
-* The client should take drawing area dimensions (Cartesian width & height) from the server upon websocket connection
+* ~~Backup the old files just to be safe, then delete all the commented out old code~~
+* Move all the bipolar coordinate functions in robotDrawModel.js to server.js and/or plotbot.js -- the client/canvas should only keep track of cartesian coordinates for now
+* The client should take drawing area dimensions from the server upon websocket connection, and be instructed where to draw Cartesian lines from the server.
 * The server should represent the drawing area: width, height, displacement from robot origin. Also should represent step length (in mm) and pulley-to-pulley distance.

@@ -48,6 +48,17 @@ if (DEBUG) {
     var board = new five.Board();
 }
 
+function updateClient(socket) {
+    var curr_coords = plotbot.getCartesian(plotbot.stepDelta, 'rel');
+    socket.emit('update',
+    {
+        'coords': [curr_coords.x, curr_coords.y],
+        'canvasWidth': plotbot.DRAWING_AREA_WIDTH,
+        'canvasHeight': plotbot.DRAWING_AREA_HEIGHT,
+    });
+}
+
+
 board.on("ready", function() {
     console.log('board ready.');
     // Initialize stepper motors
@@ -129,33 +140,54 @@ board.on("ready", function() {
 
     io.on('connection', function (socket) {
         console.log('io connection');
+        // initial update to give cursor position + canvas width & height
+        updateClient(socket);
+
         // Single steps
         socket.on('step', function (data, socket_callback) {
             console.log('got step event from browser', data);
+            console.log("WARNING: 'step' even does not validate.");
             // TODO: check that stepsLeft & stepsRight attributes exist in data
             if((data.stepsLeft !== 0 && Math.abs(data.stepsLeft) !== 1 ) ||
             (data.stepsRight !== 0 && Math.abs(data.stepsRight) !== 1)) {
                 console.log("WARNING: Bad single-step values. Skipping.");
+                socket_callback({'status':'bad step values'});
             } else {
                 activateMotors(data.stepsLeft, data.stepsRight, function() {
-                    // It's good, let the <canvas> make the virtual steps
+                    // It's good, update the stepDelta
+                    plotbot.stepDelta[0] += data.stepsLeft;
+                    plotbot.stepDelta[1] += data.stepsRight;
+                    // and let the <canvas> make the virtual steps
                     // once the steppers are done moving.
-                    socket_callback({'ok': true, 'data': data});
+                    dest_cartesian = plotbot.getCartesian(plotbot.stepDelta, 'rel');
+                    socket_callback({'status': 'ok', 'dest': dest_cartesian});
                 });
-
             }
         });
 
         // straight line
         socket.on('line', function (data, socket_callback) {
-
             console.log('drawing line with data: ');
             console.log(data);
 
-            activateMotors(data.leftDelta, data.rightDelta, function() {
-                // It's good, let the <canvas> make the virtual steps
-                socket_callback({'ok': true, 'data': data});
-            });
+            // Calculate & validate step deltas
+            var destDelta = plotbot.getBipolar(data.x, data.y, 'rel');
+            var leftDelta = destDelta[0] - plotbot.stepDelta[0];
+            var rightDelta = destDelta[1] - plotbot.stepDelta[1];
+
+            if (plotbot.validateStepDelta(destDelta)) {
+                activateMotors(leftDelta, rightDelta, function() {
+                    // It's good, update the stepDelta
+                    plotbot.stepDelta = destDelta;
+
+                    // and let the client/canvas make the virtual steps
+                    dest_cartesian = plotbot.getCartesian(plotbot.stepDelta, 'rel');
+                    socket_callback({'status': 'ok', 'dest': dest_cartesian});
+                });
+            } else {
+                socket_callback({'status': 'invalid destination'});
+            }
+
         });
     });
 
