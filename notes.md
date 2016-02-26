@@ -22,7 +22,9 @@ Cartesian coordinates only concern the drawing area, so (x,y) = (0,0) can corres
 
 If we simplify and drop native bipolar coordinate drawing support, then the client/canvas only needs to know the Cartesian coordinates within the drawing area rectangle. The server can handle the conversion to bipolar and the drawing area bounds checking by itself.
 
-The client/canvas holds the present position of the robot's cursor as `plotBot.currentCartesian`.
+The client/canvas holds the present position of the robot's cursor as `virtualBot.cursorPos`.
+
+The client also has to remember to scale the "true" relative Cartesian coordinates to the canvas pixel size.
 
 ***
 
@@ -39,3 +41,6 @@ The client/canvas holds the present position of the robot's cursor as `plotBot.c
 * ~~The server should represent the drawing area: width, height, displacement from robot origin. Also should represent step length (in mm) and pulley-to-pulley distance.~~
 * ~~Modify fontTest.js to work with the new setup.~~
 * ~~Fix the weird line thickening glitch - for some reason all old lines get stroked as drawing progresses.~~
+* Make the canvas scaling work correctly. Also, the canvas scale should be used to multiply the Cartesian coordinates when you make commands - otherwise you're doing a 1:1 pixel:Cartesian ratio, which would require a roughly 1220x2438 pixel canvas for the 4"x8" whiteboard!
+* ~~Make activateMotors set the new stepDelta itself - it should be a comprehensive function. You might want to break it up into smaller functions -- but only call one function per movement command. Work it out.~~
+* Make activateMotors scale the velocity of the steppers so the "slow" one is at max speed and the "fast" one is scaled down -- they should complete at the same time, or else you get weird L-shaped lines when their # of steps are unequal and one finished first.

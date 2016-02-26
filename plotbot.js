@@ -114,7 +114,7 @@ Plotbot = {
     // The distance between the centers of the left and right pulleys
     DIST_BTW_PULLEYS: 106.25*MM_PER_IN,
 
-    STEP_LEN: 1, //TODO: measure!!! this is a guess.
+    STEP_LEN: 36.7/600*MM_PER_IN, //Measured 600 steps
 
     // the displacement between the robot origin (center of top left pulley)
     // and drawing area origin (top left corner)

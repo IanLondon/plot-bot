@@ -6,6 +6,7 @@ var imageData = context.createImageData(canvas.width, canvas.height);
 var virtualBot = {
     cursorPos: [0,0],
     lineColor: "rgba(190, 36, 210, 0.6)",
+    scaleFactor: 1, //this will be changed up update event.
 };
 
 // canvas.addEventListener("mousedown", canvasMouseDown);
@@ -45,30 +46,43 @@ document.body.onkeydown = function(event){
     }
 };
 
-// Color as used by context.strokeStyle (right now, used only by drawSubsteps)
-// plotBot.COLOR = "rgba(255,0,0,0.25)";
-
 // Begin socket.io connection (auto-discovery)
 var socket = io();
 
 function scaleCanvas(height, width) {
     // scale the <canvas> to a given height and width,
     // within max thresholds.
-    // FIXME: this doesn't enforce thresholds!!!
+    //
+    // Also, update the scaling factor:
+    // rel. cartesian * scaleFactor -> canvas pixels
+
     var MAX_HEIGHT = 600;
     var MAX_WIDTH = 1000;
-    var aspect_ratio = height/width;
+    var given_aspect = height/width;
+    var max_aspect = MAX_HEIGHT/MAX_WIDTH;
+    var scaleFactor;
 
-    if (aspect_ratio > 1) {
-        // portrait orientation
-        canvas.height = MAX_HEIGHT;
-        canvas.width = MAX_HEIGHT/aspect_ratio;
-    } else {
-        // landscape (or square)
+    if (given_aspect <= max_aspect) {
+        // given rectangle size is shorter & broader
+        // (or the same)
+        // so give it the maximum width
+        scaleFactor = MAX_WIDTH/width;
+        canvas.height = height * scaleFactor;
         canvas.width = MAX_WIDTH;
-        canvas.height = MAX_WIDTH*aspect_ratio;
+        console.log('shorter (or same)');
+    } else {
+        // given rect is taller and skinnier
+        // so give it max height
+        scaleFactor = MAX_HEIGHT/height;
+        canvas.height = MAX_HEIGHT;
+        canvas.width = width * scaleFactor;
+        console.log('taller');
     }
-    console.log(canvas.width, canvas.height);
+
+    console.log('height, width: ' + canvas.height, canvas.width);
+    console.log('scale is ' + scaleFactor);
+    //TODO: update virtualBot.scaleFactor
+    virtualBot.scaleFactor = scaleFactor;
 }
 
 socket.on('update', function(data) {
@@ -107,62 +121,6 @@ function step(stepsLeft, stepsRight) {
     });
 }
 
-// function cartesianLength(x0, y0, x1, y1) {
-//     // the distance formula!
-//     return Math.sqrt(Math.pow(x1-x0,2)+Math.pow(y1-y0,2));
-// }
-
-// function drawSubsteps(prevStepDelta,newStepDelta) {
-//   // Draw the sampled points across the displacement
-//   var coords;
-//   var substepResolution = 4; //for spotty dotty trace, use 2.
-//   var deltaDiff = [];
-//
-//   context.strokeStyle = plotBot.COLOR;
-//
-//   for (var diff_i = 0; diff_i < 2; diff_i++) {
-//     deltaDiff[diff_i] = newStepDelta[diff_i] - prevStepDelta[diff_i];
-//   }
-//   var biggestDiff = Math.abs(deltaDiff[0]) > Math.abs(deltaDiff[1]) ? Math.abs(deltaDiff[0]) : Math.abs(deltaDiff[1]);
-//   var totalSubsteps = biggestDiff*substepResolution;
-//
-//   function subStepMap(substep_i, index) {
-//     return prevStepDelta[index] + ((newStepDelta[index] - prevStepDelta[index]) * substep_i / totalSubsteps);
-//   }
-//
-//   for (var substep_i = 0; substep_i < totalSubsteps; substep_i++) {
-//     // this should take the step directions as input, and draw a certain number
-//     // of points between those directions.
-//
-//     tempStepDelta = _.map([substep_i,substep_i], subStepMap);
-//
-//     coords = getCartesian(tempStepDelta);
-//     drawCircle(coords.x, coords.y, 1);
-//   }
-// }
-//
-// function getBipolarCoords(x,y) {
-//   var steps_l = Math.sqrt(Math.pow(x,2) + Math.pow(y,2)) / plotBot.STEP_LEN;
-//   var steps_r = (Math.sqrt(Math.pow(plotBot.WIDTH - x,2) + Math.pow(y,2)) - plotBot.WIDTH) / plotBot.STEP_LEN;
-//
-//   return [Math.round(steps_l), Math.round(steps_r)];
-// }
-//
-// function getCartesian(someStepDelta) {
-//   //clone the array, it's not necessary - but just to be safe
-//   someStepDelta = someStepDelta.slice();
-//
-//   //string lengths
-//   var s_l = someStepDelta[0]*plotBot.STEP_LEN;
-//   var s_r = someStepDelta[1]*plotBot.STEP_LEN + plotBot.WIDTH;
-//
-//   //cartesian coords
-//   var x = (Math.pow(s_l, 2) - Math.pow(s_r, 2) + Math.pow(plotBot.WIDTH, 2) ) / (2 * plotBot.WIDTH);
-//   var y = Math.sqrt( Math.abs( Math.pow(s_l, 2) - Math.pow(x,2) ));
-//
-//   return {x:x, y:y, s_l:s_l, s_r:s_r};
-// }
-
 
 function updateCursor(dest) {
     // takes the server's response and updates the cursor,
@@ -175,28 +133,6 @@ function updateCursor(dest) {
     // update virtual cursor
     virtualBot.cursorPos = [dest.x, dest.y];
 }
-
-
-// function drawArc(x,y,radius,startAngle,endAngle,counterClockwise) {
-//   context.beginPath();
-//   context.arc(x, y, radius, startAngle, endAngle, counterClockwise);
-//   context.stroke();
-// }
-//
-// function drawCircle(x,y,radius) {
-//   context.beginPath();
-//   context.arc(x, y, radius, 0, 2*Math.PI, false);
-//   context.stroke();
-// }
-//
-// // Draw the bipolar "grid".
-// for (var i = 0; i < 1000; i+=plotBot.STEP_LEN) {
-//   context.strokeStyle = "rgba(255, 0, 0, 0.10)";
-//   drawArc(0, 0, i, 0, 2*Math.PI, false);
-//
-//   context.strokeStyle = "rgba(0, 0, 255, 0.10)";
-//   drawArc(plotBot.WIDTH, 0, i, 0, 2*Math.PI, false);
-// }
 
 function drawStraightLine(x, y, callback) {
     // Draws an approximately straight line with both motors simultaneously.

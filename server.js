@@ -34,8 +34,8 @@ if (DEBUG) {
             //   }
             // ]
           }),
-          debug: false,
-          repl: false
+          debug: true,
+          repl: true
     });
 
     // monkey patch Stepper.step so that callbacks work in mock mode
@@ -136,6 +136,10 @@ board.on("ready", function() {
             });
             eachStepper(stepperRight, stepsRight, callback);
         }
+
+        // finally, update the stepDelta
+        plotbot.stepDelta[0] += stepsLeft;
+        plotbot.stepDelta[1] += stepsRight;
     }
 
     io.on('connection', function (socket) {
@@ -146,7 +150,7 @@ board.on("ready", function() {
         // Single steps
         socket.on('step', function (data, socket_callback) {
             console.log('got step event from browser', data);
-            console.log("WARNING: 'step' even does not validate.");
+            console.log("WARNING: 'step' event does not validate the destination.");
             // TODO: check that stepsLeft & stepsRight attributes exist in data
             if((data.stepsLeft !== 0 && Math.abs(data.stepsLeft) !== 1 ) ||
             (data.stepsRight !== 0 && Math.abs(data.stepsRight) !== 1)) {
@@ -154,11 +158,7 @@ board.on("ready", function() {
                 socket_callback({'status':'bad step values'});
             } else {
                 activateMotors(data.stepsLeft, data.stepsRight, function() {
-                    // It's good, update the stepDelta
-                    plotbot.stepDelta[0] += data.stepsLeft;
-                    plotbot.stepDelta[1] += data.stepsRight;
-                    // and let the <canvas> make the virtual steps
-                    // once the steppers are done moving.
+                    // It's good, let the client/canvas make the virtual steps
                     dest_cartesian = plotbot.getCartesian(plotbot.stepDelta, 'rel');
                     socket_callback({'status': 'ok', 'dest': dest_cartesian});
                 });
@@ -169,7 +169,6 @@ board.on("ready", function() {
         socket.on('line', function (data, socket_callback) {
             console.log('drawing line with data: ');
             console.log(data);
-
             // Calculate & validate step deltas
             var destDelta = plotbot.getBipolar(data.x, data.y, 'rel');
             var leftDelta = destDelta[0] - plotbot.stepDelta[0];
@@ -177,10 +176,7 @@ board.on("ready", function() {
 
             if (plotbot.validateStepDelta(destDelta)) {
                 activateMotors(leftDelta, rightDelta, function() {
-                    // It's good, update the stepDelta
-                    plotbot.stepDelta = destDelta;
-
-                    // and let the client/canvas make the virtual steps
+                    // It's good, let the client/canvas make the virtual steps
                     dest_cartesian = plotbot.getCartesian(plotbot.stepDelta, 'rel');
                     socket_callback({'status': 'ok', 'dest': dest_cartesian});
                 });
@@ -191,12 +187,14 @@ board.on("ready", function() {
         });
     });
 
-// // Inject into repl for debugging
-//     this.repl.inject({
-//         stepperLeft: stepperLeft,
-//         stepperRight: stepperRight,
-//         activateMotors: activateMotors
-//     });
+    // Inject into repl for debugging
+    // TODO: (I can't get into the repl in mock-firmata...?)
+    this.repl.inject({
+        stepperLeft: stepperLeft,
+        stepperRight: stepperRight,
+        activateMotors: activateMotors,
+        plotbot: plotbot,
+    });
 });
 
 if (DEBUG) {
