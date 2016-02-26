@@ -10,15 +10,6 @@ console.log("TODO: get robot coordinates & draw area info from server upon conne
 // canvas.addEventListener("mousedown", canvasMouseDown);
 canvas.addEventListener("mouseup", canvasMouseUp);
 
-// function canvasMouseDown(event) {
-//   // WARNING: this is not robust. If the canvas is not positioned relative to
-//   // the whole page (not nested), and maybe if you scroll, it can cause problems.
-//   var coords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
-//   // console.log(coords);
-//   // return coords;
-//   stepDelta = getBipolarCoords(coords[0], coords[1]);
-// }
-
 function canvasMouseUp(event) {
   // draw a line from the "current position" stepDelta to given destDelta.
   var mouseupCoords = [event.pageX - canvas.offsetLeft, event.pageY - canvas.offsetTop];
@@ -57,10 +48,11 @@ document.body.onkeydown = function(event){
 
 var plotBot = {};
 
-plotBot.STEP_LEN = 1;
-
 // Color as used by context.strokeStyle (right now, used only by drawSubsteps)
 plotBot.COLOR = "rgba(255,0,0,0.25)";
+
+// The distance of each step (eg, mm of string retracted/extended)
+plotBot.STEP_LEN = 1; //TODO: real value!
 
 // horizontal dist btw the 2 stepper motors.
 // plotBot.WIDTH = canvas.width;
@@ -76,177 +68,9 @@ function isInt(value) {
   return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value));
 }
 
-// function intChunk(total, segments) {
-//   // Given a total value (integer) and a number of segments, build an array of integers
-//   // which are as close as possible to each other, which sum to the given total.
-//   // Eg intChunk(20,8) --> [ 3, 3, 3, 3, 2, 2, 2, 2 ].
-//   // Negative values for 'total' are fine -- all the elements will be negative
-//
-//   // This is useful when chunking steps to draw a line in a Bresenham-inspired way!
-//
-//   if (segments < 0 || !isInt(segments)) {
-//     throw new Error("intChunk needs 'segments' to be a positive integer. Got " + segments);
-//   }
-//
-//   if (total === 0 || !isInt(total)) {
-//     throw new Error("intChunk needs nonzero integer 'total'. Got " + total);
-//   }
-//
-//   // Create and populate chunkArray with minimum values
-//   var chunkArray = [];
-//   var isPositive = (total > 0);
-//   // Math.floor rounds negative numbers up: -2.5 --> -3. So use Math.ceil for negatives.
-//   var initialVal = isPositive ? Math.floor(total/segments) : Math.ceil(total/segments);
-//   for (var i=0; i<segments; i++) {
-//     chunkArray.push(initialVal);
-//   }
-//
-//   // Go thru array incrementing each element by 1 (if positive) or -1 (if neg)
-//   // until the sum of the array reaches the value or 'sum'.
-//   var signedAdder = isPositive ? 1 : -1;
-//   var runningSum = Math.abs(initialVal * segments);
-//   var index = 0;
-//   while (runningSum < Math.abs(total)) {
-//     chunkArray[index] += signedAdder;
-//     index = (index + 1 == segments) ? 0 : index + 1;
-//     runningSum++;
-//   }
-//
-//   return chunkArray;
-// }
-
-  // TODO: Make another function that divides a cartesian line into samples,
-  // Use plotBot.CARTESIAN_RESOLUTION to determine how many samples to make,
-  // each sample is an arc where the endpoints are integer bipolar approximations
-  // of the cartesian line.
-
-// function moveRobotTo(destDelta) {
-//   // Negotiate a "symmetrical" path of step()'s to get from current stepDelta
-//   // to destDelta (destination): prefers to move both motors at once, and to
-//   // distribute the single-motor motions evenly along the path.
-//
-//   // XXX: This is really just for the HTML canvas simulator, the steppers can be run simultaneously & asychronously with johnny-five... maybe.
-//
-//   // TODO: Verify that the destDelta is an array of 2 integers, and that it is
-//   // within the bounds of the drawing area.
-//
-//   var stepDisplacement, stepDirection;
-//   var totalSteps, totalDualSteps, totalSingleSteps, singleStepMotorIndex;
-//   var biggerStepIndex, smallerStepIndex;
-//   var primaryMvmt, secondaryMvmt;
-//   var primaryIsDual;
-//
-//   stepDisplacement = _.map(stepDelta, function(currentVal,index) {
-//     return destDelta[index] - currentVal;
-//   });
-//
-//   stepDirection = _.map(stepDisplacement, function(steps) {
-//     if (steps < 0) return -1;
-//     else if (steps > 0) return 1;
-//     else return 0;
-//   });
-//
-//   totalSteps = _.map(stepDisplacement, function(steps) {
-//     return Math.abs(steps);
-//   });
-//
-//   if (totalSteps[0] >= totalSteps[1]) {
-//     biggerStepIndex = 0;
-//     smallerStepIndex = 1;
-//   } else {
-//     biggerStepIndex = 1;
-//     smallerStepIndex = 0;
-//   }
-//   singleStepIndex = biggerStepIndex;
-//   totalSingleSteps = totalSteps[biggerStepIndex] - totalSteps[smallerStepIndex];
-//   totalDualSteps = totalSteps[smallerStepIndex];
-//
-//   if (totalDualSteps === 0 || totalSingleSteps === 0) {
-//     secondaryMvmt = [];
-//     if (totalDualSteps === totalSingleSteps) {
-//       // TODO: moveRobotTo gets 0 steps all the time. Handle this earlier!
-//       console.log("weird, moveRobotTo got 0 steps...");
-//       return false;
-//     }
-//     else if (totalDualSteps > totalSingleSteps) {
-//       primaryMvmt = [totalDualSteps];
-//       primaryIsDual = true;
-//     } else {
-//       primaryMvmt = [totalSingleSteps];
-//       primaryIsDual = false;
-//     }
-//   }
-//   else if (totalDualSteps < totalSingleSteps) {
-//     secondaryMvmt = intChunk(totalDualSteps, totalDualSteps);
-//     primaryMvmt = intChunk(totalSingleSteps, totalDualSteps+1);
-//     primaryIsDual = false;
-//   } else {
-//     secondaryMvmt = intChunk(totalSingleSteps, totalSingleSteps);
-//     primaryMvmt = intChunk(totalDualSteps, totalSingleSteps+1);
-//     primaryIsDual = true;
-//   }
-//
-//   // console.log({primaryMvmt:primaryMvmt, secondaryMvmt:secondaryMvmt});
-//
-//
-//   function dualStep() {
-//     // stepDelta = _.map(stepDelta, function(currentVal, index){
-//     //   return currentVal + stepDirection[index];
-//     // });
-//     step(stepDirection[0], stepDirection[1]);
-//   }
-//
-//   function singleStep() {
-//     // stepDelta[singleStepIndex] += stepDirection[singleStepIndex];
-//     if (singleStepIndex === 0) {
-//       step(stepDirection[0],0);
-//     } else {
-//       step(0, stepDirection[1]);
-//     }
-//   }
-//
-//   // move the canvas "cursor" to the beginning stepDelta
-//   context.beginPath();
-//   context.strokeStyle = "rgba(255,0,100,1)";
-//   context.moveTo(stepDelta[0], stepDelta[1]);
-//
-//   _.forEach(secondaryMvmt, function(secondarySteps,index) {
-//     if (primaryIsDual) {
-//       // execute primary mvmt. it's dual.
-//       _.times(primaryMvmt[index], dualStep);
-//
-//       // execute secondary mvmt. it's single.
-//       // since secondary mvmt contains only one step, just call it once.
-//       singleStep();
-//     }
-//     else {
-//       // primary is singleStep, secondary mvmt is dualStep.
-//       _.times(primaryMvmt[index], singleStep);
-//       dualStep();
-//     }
-//
-//   });
-//   // there's always one more movement chunk in primaryMvmt than in secondaryMvmt
-//   // so make that last movement now:
-//   // TODO use _.last(primaryMvmt) instead
-//     if (primaryIsDual) {
-//       _.times(primaryMvmt[primaryMvmt.length - 1], dualStep);
-//     } else {
-//       _.times(primaryMvmt[primaryMvmt.length - 1], singleStep);
-//     }
-//
-//     // debug!
-//     // console.log("robot moved to");
-//     // console.log(stepDelta.slice(0));
-//
-//     if(stepDelta[0] !== destDelta[0] || stepDelta[1] !== destDelta[1]) {
-//       console.log("...but should have moved to step delta " + destDelta[0] + ", " + destDelta[1]);
-//       console.log("moveRobotTo() did not wind up at destination!");
-//     }
-// }
-
 function step(stepsLeft, stepsRight) {
     // Performs a single step with one or both motors.
+    // Currently only used by d/f/j/k keypress events.
     //steps is positive -> extend string
     //steps is negative -> retract string
 
@@ -257,7 +81,6 @@ function step(stepsLeft, stepsRight) {
     if((stepsLeft !== 0 && Math.abs(stepsLeft) !== 1 ) ||
     (stepsRight !== 0 && Math.abs(stepsRight) !== 1)) {
         throw new Error("Steps can only be -1, 0, or 1");
-        // console.log("Warning: multiple steps at once...");
     }
 
     // Emit a step event to the server
@@ -277,7 +100,7 @@ function step(stepsLeft, stepsRight) {
             updateCursor();
             drawSubsteps(prevStepDelta,newStepDelta);
         } else {
-            console.log("non-ok response from server");
+            console.log("non-ok response from server:");
             console.log(response);
         }
     });
@@ -408,54 +231,3 @@ function drawStraightLine(destDelta, callback) {
     });
 
 }
-
-// function drawStraightLine(destDelta) {
-//   // draw an approximately straight line from current stepDelta
-//   // to destDelta, by splitting up the cartesian line a given no of times
-//   var coords0, coords1;
-//   var x, x0, x1, y, y0, y1;
-//   var allCoords;
-//   var lineLength, timesToSplit;
-//
-//   currentCoords = getCartesian(stepDelta);
-//   destCoords = getCartesian(destDelta);
-//
-//   x0 = currentCoords.x;
-//   y0 = currentCoords.y;
-//   x1 = destCoords.x;
-//   y1 = destCoords.y;
-//
-//   allCartesianCoords = [];
-//   allBipolarCoords = [];
-//
-//   lineLength = cartesianLength(x0, y0, x1, y1);
-//   timesToSplit = Math.ceil(lineLength / plotBot.CARTESIAN_RESOLUTION);
-//   // console.log("splitting line of length " + lineLength + " into " + timesToSplit + " segments.");
-//
-//   if (x1-x0 === 0 && y1-y0 === 0) {
-//     console.log("drawStraightLine got same coords, skipping.");
-//   } else {
-//     for(var i=0; i<=timesToSplit; i++) {
-//       x = (x1-x0)*i/timesToSplit + x0;
-//       y = (y1-y0)*i/timesToSplit + y0;
-//
-//       allCartesianCoords.push([x,y]);
-//       allBipolarCoords.push(getBipolarCoords(x,y));
-//     }
-//   }
-//
-//   _.forEach(allBipolarCoords, function(coords) {
-//     moveRobotTo(coords);
-//     // debug: show the bipolar coords in red
-//     var cartTemp = getCartesian(coords);
-//     context.strokeStyle = "rgba(255,0,0,0.5)";
-//     drawCircle(cartTemp.x, cartTemp.y, 1);
-//   });
-//
-//   // debug: show the cartesian coords in black
-//   context.strokeStyle = "rgba(0,0,0,0.5)";
-//   _.forEach(allCartesianCoords, function (coords) {
-//     drawCircle(coords[0], coords[1], 1);
-//   });
-//
-// }

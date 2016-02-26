@@ -4,6 +4,7 @@ var http = require('http').Server(app);
 var path = require('path');
 var io = require('socket.io')(http);
 var five = require("johnny-five");
+var plotbot = require("./plotbot.js");
 
 // TODO: rearrange directory structure to make "public" folder
 app.use(express.static('drawCanvas'));
@@ -71,7 +72,6 @@ board.on("ready", function() {
     stepperLeft.extend_dir = five.Stepper.DIRECTION.CCW;
     stepperLeft.retract_dir = five.Stepper.DIRECTION.CW;
     stepperLeft.name = 'left';
-
 
     var stepperRight = new five.Stepper({
         type: five.Stepper.TYPE.DRIVER,
