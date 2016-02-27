@@ -1,7 +1,7 @@
 # plot-bot
 A v-plotter / Polargraph-type drawing robot actuated with johnny-five and with simulation tools using HTML5 &lt;canvas>
 
-Right now it is only a simple vector-drawing-in-discrete-bipolar-coordinates simulator of how the bot will work.
+![Plot bot design](img/plot-bot-core.jpg)
 
 `drawCanvas/drawcanvas.html` now shows an example of using the `opentype.js` module to simulate drawing the outline of arbitrary text in a solid TrueType font (see `drawCanvas/fontTest.js`).
 
@@ -17,10 +17,13 @@ Install node and npm. Then do:
     npm install
     node server.js
 
-Open up a browser to `localhost:3000` and start doodling.
+Use mock-firmata to fake a Board by running in debug mode:
 
-## step()
-The fundamental stepping operation is `step(stepsLeft, stepsRight)`, where the arguments can be -1, 0, or +1. Eg `step(-1,1)` will retract the left stepper motor by one step and extend the right stepper motor by one step.
+    node server.js debug
+
+Then open up a browser to `localhost:3000` and click around to start doodling.
+
+`fontTest.js` is an example of converting text to a coordinate series, it's very rudimentary right now but it works. You can uncomment it in `drawcanvas.html` to activate it.
 
 You can manually extend/retract the stepper motors by pressing the following keys when the canvas is active:
 <table>
@@ -41,4 +44,9 @@ You can manually extend/retract the stepper motors by pressing the following key
 </tr>
 </table>
 
-### TODO: connect step() to johnny-five, so the Arduino actually moves the stepper motor!
+***
+
+See [notes.md](notes.md) for more info.
+
+This project is still very much in alpha!
+![hello or "help"?](img/hellp.jpg)
