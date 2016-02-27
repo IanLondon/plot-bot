@@ -6,7 +6,7 @@ var io = require('socket.io')(http);
 var five = require("johnny-five");
 var plotbot = require("./plotbot.js");
 
-var MAX_RPM = 60; //max RPM for stepper motors
+var MAX_RPM = 20; //max RPM for stepper motors. 60 was OK unloaded, but weight->slower
 
 // TODO: rearrange directory structure to make "public" folder
 app.use(express.static('drawCanvas'));

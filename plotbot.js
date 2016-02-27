@@ -118,12 +118,12 @@ Plotbot = {
 
     // the displacement between the robot origin (center of top left pulley)
     // and drawing area origin (top left corner)
-    DISPLACE_WIDTH: 6.75*MM_PER_IN,
-    DISPLACE_HEIGHT: 21*MM_PER_IN,
+    DISPLACE_WIDTH: 22.5*MM_PER_IN, // 6.75" to top left of whiteboard
+    DISPLACE_HEIGHT: 26.5*MM_PER_IN, //21" to top left of whiteboard
 
     // dimensions of drawing area rectangle.
-    DRAWING_AREA_WIDTH: 96*MM_PER_IN,
-    DRAWING_AREA_HEIGHT: 48*MM_PER_IN,
+    DRAWING_AREA_WIDTH: 48*MM_PER_IN, //96" whiteboard
+    DRAWING_AREA_HEIGHT: 26*MM_PER_IN, //48" whiteboard
 
     sanityCheck: function() {
         return sanityCheck(this);
