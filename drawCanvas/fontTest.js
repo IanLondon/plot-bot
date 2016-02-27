@@ -1,6 +1,7 @@
 console.log("running font drawing test!");
 
 var drawCoords = [];
+var text_to_draw = 'hi';
 
 function drawLoop(drawIndex) {
     if (drawIndex >= drawCoords.length) {
@@ -25,7 +26,7 @@ opentype.load('fonts/candy_shop/Candy\ Shop\ Black.ttf', function(err, font) {
         // Construct a Path object containing the letter shapes of the given text.
         // The other parameters are x, y and fontSize.
         // Note that y is the position of the baseline.
-        var path = font.getPath('o', 100, 350, 200);
+        var path = font.getPath(text_to_draw, 100, 350, 200);
         // If you just want to draw the text you can also use font.draw(ctx, text, x, y, fontSize).
 
         // DEBUG: show the stroke of the text

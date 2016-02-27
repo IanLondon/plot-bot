@@ -6,8 +6,6 @@ var io = require('socket.io')(http);
 var five = require("johnny-five");
 var plotbot = require("./plotbot.js");
 
-var MAX_RPM = 20; //max RPM for stepper motors. 60 was OK unloaded, but weight->slower
-
 // TODO: rearrange directory structure to make "public" folder
 app.use(express.static('drawCanvas'));
 
@@ -81,7 +79,7 @@ board.on("ready", function() {
             step: 2,
             dir: 3
         },
-        rpm: MAX_RPM,
+        rpm: plotbot.MAX_RPM,
     });
     stepperLeft.extend_dir = five.Stepper.DIRECTION.CCW;
     stepperLeft.retract_dir = five.Stepper.DIRECTION.CW;
@@ -94,7 +92,7 @@ board.on("ready", function() {
             step: 10,
             dir: 11
         },
-        rpm: MAX_RPM,
+        rpm: plotbot.MAX_RPM,
 
     });
     stepperRight.extend_dir = five.Stepper.DIRECTION.CW;
@@ -136,18 +134,18 @@ board.on("ready", function() {
 
         if (Math.abs(stepsLeft) > Math.abs(stepsRight)) {
             // left has more steps, it's the "longer" movement
-            eachStepper(stepperLeft, stepsLeft, MAX_RPM, callback);
-            slow_rpms = MAX_RPM * Math.abs(stepsRight/stepsLeft);
+            eachStepper(stepperLeft, stepsLeft, plotbot.MAX_RPM, callback);
+            slow_rpms = plotbot.MAX_RPM * Math.abs(stepsRight/stepsLeft);
             eachStepper(stepperRight, stepsRight, slow_rpms, function(){
                 console.log('right is done stepping');
             });
         } else {
             // right is the "longer" movement (or they finish at the same time)
-            slow_rpms = MAX_RPM * Math.abs(stepsLeft/stepsRight);
+            slow_rpms = plotbot.MAX_RPM * Math.abs(stepsLeft/stepsRight);
             eachStepper(stepperLeft, stepsLeft, slow_rpms, function(){
                 console.log('left is done stepping');
             });
-            eachStepper(stepperRight, stepsRight, MAX_RPM, callback);
+            eachStepper(stepperRight, stepsRight, plotbot.MAX_RPM, callback);
         }
 
         // finally, update the stepDelta

@@ -111,10 +111,12 @@ Plotbot = {
     // All measurements are in these units
     UNITS: 'mm',
 
+    MAX_RPM: 30, // fastest speed in rotations per minute. Too fast = stepper slippage
+
     // The distance between the centers of the left and right pulleys
     DIST_BTW_PULLEYS: 106.25*MM_PER_IN,
 
-    STEP_LEN: 36.7/600*MM_PER_IN, //Measured 600 steps
+    STEP_LEN: 30.25/1000*MM_PER_IN, //Measured 1000 steps
 
     // the displacement between the robot origin (center of top left pulley)
     // and drawing area origin (top left corner)
