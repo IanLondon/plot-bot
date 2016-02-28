@@ -55,6 +55,14 @@ function sanityCheck(bot) {
     return true;
 }
 
+function assertPositiveLengths(s_l, s_r){
+    // Make sure string lengths are positive
+    if (s_l < 0 || s_r < 0) {
+        throw new InvalidDimensionsError("String length cannot be negative");
+    }
+    return true;
+}
+
 function getCartesian(bot, someStepDelta, cartesianType) {
     // Returns cartesian coordinates (relative to top left pulley) from a given stepDelta.
     // cartesianType == 'abs' means absolute coordinates (measured from left pulley)
@@ -67,9 +75,7 @@ function getCartesian(bot, someStepDelta, cartesianType) {
     var s_l = someStepDelta[0]*bot.STEP_LEN;
     var s_r = someStepDelta[1]*bot.STEP_LEN + bot.DIST_BTW_PULLEYS;
 
-    if (s_l < 0 || s_r < 0) {
-        throw new InvalidDimensionsError("String length cannot be negative");
-    }
+    assertPositiveLengths(s_l, s_r);
 
     //cartesian coords
     var x = (Math.pow(s_l, 2) - Math.pow(s_r, 2) + Math.pow(bot.DIST_BTW_PULLEYS, 2) ) / (2 * bot.DIST_BTW_PULLEYS);
@@ -85,7 +91,18 @@ function getCartesian(bot, someStepDelta, cartesianType) {
     return {x: x, y: y, s_l: s_l, s_r: s_r};
 }
 
-function getBipolar(bot, x, y, cartesianType) {
+function getBipolarFromStrLen(bot, s_l, s_r) {
+    // given string lengths s_l and s_r, return bipolar coords
+
+    assertPositiveLengths(s_l, s_r);
+
+    var leftDelta = s_l / bot.STEP_LEN;
+    var rightDelta = (s_r - bot.DIST_BTW_PULLEYS) / bot.STEP_LEN;
+
+    return [Math.round(leftDelta), Math.round(rightDelta)];
+}
+
+function getBipolarFromCart(bot, x, y, cartesianType) {
     // (x, y) are Cartesian coordinates.
     // cartesianType == 'abs' means absolute coordinates (measured from left pulley)
     // 'rel' means relative coordinates (measured from top left of drawing area)
@@ -98,10 +115,13 @@ function getBipolar(bot, x, y, cartesianType) {
         throw new Error("cartesianType must be 'rel' or 'abs'");
     }
 
-    var steps_l = Math.sqrt(Math.pow(x,2) + Math.pow(y,2)) / bot.STEP_LEN;
-    var steps_r = (Math.sqrt(Math.pow(bot.DIST_BTW_PULLEYS - x,2) + Math.pow(y,2)) - bot.DIST_BTW_PULLEYS) / bot.STEP_LEN;
+    // Calculate string lengths w/ Pythagorean
+    var s_l = Math.sqrt(Math.pow(x,2) + Math.pow(y,2));
+    var s_r = (Math.sqrt(Math.pow(bot.DIST_BTW_PULLEYS - x,2) + Math.pow(y,2)));
 
-    return [Math.round(steps_l), Math.round(steps_r)];
+    var stepDelta = getBipolarFromStrLen(bot, s_l, s_r);
+
+    return stepDelta;
 }
 
 // Conversion factor, since I measured in inches
@@ -133,8 +153,11 @@ Plotbot = {
     getCartesian: function(someStepDelta, cartesianType) {
         return getCartesian(this, someStepDelta, cartesianType);
     },
-    getBipolar: function(x, y, cartesianType) {
-        return getBipolar(this, x, y, cartesianType);
+    getBipolarFromCart: function(x, y, cartesianType) {
+        return getBipolarFromCart(this, x, y, cartesianType);
+    },
+    getBipolarFromStrLen: function(s_l, s_r) {
+        return getBipolarFromStrLen(this, s_l, s_r);
     },
     validateStepDelta: function(stepDelta) {
         return validateStepDelta(this, stepDelta);
@@ -146,7 +169,8 @@ Plotbot = {
 // Set initial stepDelta to drawing area origin.
 // Don't do (0,0) or you can wind up outside of the rectangle
 // due to rounding!
-Plotbot.stepDelta = Plotbot.getBipolar(10, 10, "rel");
+Plotbot.stepDelta = Plotbot.getBipolarFromCart(10, 10, "rel");
+console.log("Starting position:" + Plotbot.stepDelta);
 
 // initial sanity check on fresh configuration
 Plotbot.sanityCheck();

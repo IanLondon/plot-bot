@@ -181,7 +181,7 @@ board.on("ready", function() {
             console.log('drawing line with data: ');
             console.log(data);
             // Calculate & validate step deltas
-            var destDelta = plotbot.getBipolar(data.x, data.y, 'rel');
+            var destDelta = plotbot.getBipolarFromCart(data.x, data.y, 'rel');
             var leftDelta = destDelta[0] - plotbot.stepDelta[0];
             var rightDelta = destDelta[1] - plotbot.stepDelta[1];
 
@@ -189,6 +189,9 @@ board.on("ready", function() {
                 activateMotors(leftDelta, rightDelta, function() {
                     // It's good, let the client/canvas make the virtual steps
                     dest_cartesian = plotbot.getCartesian(plotbot.stepDelta, 'rel');
+                    console.log(dest_cartesian);
+                    console.log('stepDelta is:');
+                    console.log(plotbot.stepDelta);
                     socket_callback({'status': 'ok', 'dest': dest_cartesian});
                 });
             } else {
