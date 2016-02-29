@@ -63,17 +63,17 @@ function assertPositiveLengths(s_l, s_r){
     return true;
 }
 
-function getCartesian(bot, someStepDelta, cartesianType) {
+function getCartesian(bot, stepDelta, cartesianType) {
     // Returns cartesian coordinates (relative to top left pulley) from a given stepDelta.
     // cartesianType == 'abs' means absolute coordinates (measured from left pulley)
     // 'rel' means relative coordinates (measured from top left of drawing area)
 
     //XXX: clone the array, it's not necessary - but just to be safe
-    someStepDelta = someStepDelta.slice();
+    someStepDelta = stepDelta.slice();
 
     //string lengths
-    var s_l = someStepDelta[0]*bot.STEP_LEN;
-    var s_r = someStepDelta[1]*bot.STEP_LEN + bot.DIST_BTW_PULLEYS;
+    var s_l = someStepDelta[0]*bot.STEP_LEN_L;
+    var s_r = someStepDelta[1]*bot.STEP_LEN_R + bot.DIST_BTW_PULLEYS;
 
     assertPositiveLengths(s_l, s_r);
 
@@ -96,8 +96,8 @@ function getBipolarFromStrLen(bot, s_l, s_r) {
 
     assertPositiveLengths(s_l, s_r);
 
-    var leftDelta = s_l / bot.STEP_LEN;
-    var rightDelta = (s_r - bot.DIST_BTW_PULLEYS) / bot.STEP_LEN;
+    var leftDelta = s_l / bot.STEP_LEN_L;
+    var rightDelta = (s_r - bot.DIST_BTW_PULLEYS) / bot.STEP_LEN_R;
 
     return [Math.round(leftDelta), Math.round(rightDelta)];
 }
@@ -124,6 +124,27 @@ function getBipolarFromCart(bot, x, y, cartesianType) {
     return stepDelta;
 }
 
+function reZero(bot) {
+    // DEBUG. TODO: remove this function once done
+    // set relative cartesian (0,0) to current position
+    // this is the top left of the drawing area.
+    var rel_cartesian = bot.getCartesian(bot.stepDelta, 'rel');
+    bot.DISPLACE_WIDTH += rel_cartesian.x;
+    bot.DISPLACE_HEIGHT += rel_cartesian.y;
+}
+
+function initialize(bot) {
+    // Set initial stepDelta to drawing area origin.
+    bot.stepDelta = bot.getBipolarFromStrLen(bot.START_STR_LEN_L, bot.START_STR_LEN_R, "abs");
+    var abs_cartesian = bot.getCartesian(bot.stepDelta, 'abs');
+
+    // Use the initial string length parameters to calculate the DISPLACE_WIDTH & HEIGHT
+    // (It's easier to measure the intital string lengths w/ a tape measure
+    // than to try and measure the horiz and vert displacement!)
+    bot.DISPLACE_WIDTH = abs_cartesian.x;
+    bot.DISPLACE_HEIGHT = abs_cartesian.y;
+}
+
 // Conversion factor, since I measured in inches
 var MM_PER_IN = 25.4;
 
@@ -131,17 +152,26 @@ Plotbot = {
     // All measurements are in these units
     UNITS: 'mm',
 
-    MAX_RPM: 30, // fastest speed in rotations per minute. Too fast = stepper slippage
+    MAX_RPM: 60, // fastest speed in rotations per minute. Too fast = stepper slippage
 
     // The distance between the centers of the left and right pulleys
     DIST_BTW_PULLEYS: 106.25*MM_PER_IN,
 
-    STEP_LEN: 30.25/1000*MM_PER_IN, //Measured 1000 steps
+    STEP_LEN_L: ((107.375-34.875)*MM_PER_IN)/(4309-1732), //(94-53)*MM_PER_IN/2000, // 2000 steps, measured from pulley to gondola attachmt point
+    STEP_LEN_R: ((85.75-46.25)*MM_PER_IN)/((-918)-(-2087)), //(106.5-65.5)*MM_PER_IN/2000, // 2000 steps, measured from pulley to gondola attachmt point
+    //Old R: 0.849 from diff btw corners
+    // STEP_LEN for Left and Right steppers can be significantly different
+    // even when you have the same motors & spools! (Didn't happen this time :D )
 
     // the displacement between the robot origin (center of top left pulley)
     // and drawing area origin (top left corner)
-    DISPLACE_WIDTH: 22.5*MM_PER_IN, // 6.75" to top left of whiteboard
-    DISPLACE_HEIGHT: 26.5*MM_PER_IN, //21" to top left of whiteboard
+    DISPLACE_WIDTH: 0,
+    DISPLACE_HEIGHT: 0, // gets set later using START_STR_LEN_L & R
+
+    // put the 'ideal'/'theoretical' string length, not necessarily
+    // the pulley-to-gondola-attachment-point string length.
+    START_STR_LEN_L: 895.35,
+    START_STR_LEN_R: 2222.5,
 
     // dimensions of drawing area rectangle.
     DRAWING_AREA_WIDTH: 48*MM_PER_IN, //96" whiteboard
@@ -162,15 +192,20 @@ Plotbot = {
     validateStepDelta: function(stepDelta) {
         return validateStepDelta(this, stepDelta);
     },
+    reZero: function() {
+        return reZero(this);
+    },
+    initialize: function() {
+        return initialize(this);
+    },
 
     stepDelta: [0,0], // will get changed immediately
 };
 
-// Set initial stepDelta to drawing area origin.
-// Don't do (0,0) or you can wind up outside of the rectangle
-// due to rounding!
-Plotbot.stepDelta = Plotbot.getBipolarFromCart(10, 10, "rel");
 console.log("Starting position:" + Plotbot.stepDelta);
+
+//initialize stepDelta and displacement
+Plotbot.initialize();
 
 // initial sanity check on fresh configuration
 Plotbot.sanityCheck();
