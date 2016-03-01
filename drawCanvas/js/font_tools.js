@@ -1,8 +1,8 @@
 var TextMgr = {
-    x0: 100,
-    y0: 250,
-    text_to_draw: 'hi',
-    fontSize: 150,
+    x0: 20,
+    y0: 200,
+    text_to_draw: 'Happy Birthday Sarah',
+    fontSize: 50,
     ctx: undefined,
     path: undefined,
     FONT_PATH: 'fonts/candy_shop/Candy\ Shop\ Black.ttf',

@@ -61,16 +61,16 @@ function sObjToPoint(sObj, t) {
 
     if (spatialObjType(sObj) == 'quadBezier') {
         return {
-            x: sObj.x0*mt2 + sObj.x*2*mt*t + sObj.x1*t2,
-            y: sObj.y0*mt2 + sObj.y*2*mt*t + sObj.y1*t2,
+            x: sObj.x0*mt2 + sObj.x1*2*mt*t + sObj.x*t2,
+            y: sObj.y0*mt2 + sObj.y1*2*mt*t + sObj.y*t2,
         };
     }
     if (spatialObjType(sObj) == 'cubicBezier') {
         var t3 = t2 * t;
         var mt3 = mt2 * mt;
         return {
-            x: sObj.x0*mt3 + 3*sObj.x*mt2*t + 3*sObj.x1*mt*t2 + sObj.x2*t3,
-            y: sObj.y0*mt3 + 3*sObj.y*mt2*t + 3*sObj.y1*mt*t2 + sObj.y2*t3,
+            x: sObj.x0*mt3 + 3*sObj.x1*mt2*t + 3*sObj.x2*mt*t2 + sObj.x*t3,
+            y: sObj.y0*mt3 + 3*sObj.y1*mt2*t + 3*sObj.y2*mt*t2 + sObj.y*t3,
         };
     }
 
@@ -99,9 +99,9 @@ function sObjSubsection(sObj, subsectionCount) {
     // WARNING: for curves, the line segments won't have equal lengths!
 
     // Use default if unspecified
-    // TODO: should be a plotbot property
+    // TODO: should be a virtualBotbot property
     // or even better, auto-determined somehow at least loosely!
-    var DEFAULT_SUBSECTION_COUNT = 12;
+    var DEFAULT_SUBSECTION_COUNT = 4;
     subsectionCount = typeof subsectionCount !== 'undefined' ? subsectionCount : DEFAULT_SUBSECTION_COUNT;
 
     if (subsectionCount <= 0) {
@@ -127,7 +127,8 @@ function sObjSubsection(sObj, subsectionCount) {
 function drawPoints(points) {
     console.log('beginning drawPoints');
     // TODO: make a version compatible with both points from bezier and points from opentype.js
-    var DELAY_BTW_COMMANDS = 50; //TODO: this should be a plotbot property...
+    var DELAY_BTW_COMMANDS = 10; //TODO: this should be a plotbot property...
+
     function drawLoop(drawIndex) {
         if (drawIndex >= points.length) {
             // break out of callback loop

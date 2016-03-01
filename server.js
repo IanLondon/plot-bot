@@ -46,7 +46,7 @@ if (DEBUG) {
     });
 
     // monkey patch Stepper.step so that callbacks work in mock mode
-    var STEPPER_MOCK_DELAY = 10;
+    var STEPPER_MOCK_DELAY = 15;
     five.Stepper.prototype.step = function(steps, callback) {
         setTimeout(callback, STEPPER_MOCK_DELAY);
     };
