@@ -14,7 +14,7 @@ lib-cov
 coverage
 
 # Bower components in drawCanvas
-drawCanvas/bower_components
+bower_components
 
 # Browse-IO directory
 browse-io
