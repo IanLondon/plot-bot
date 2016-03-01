@@ -154,6 +154,9 @@ Plotbot = {
 
     MAX_RPM: 60, // fastest speed in rotations per minute. Too fast = stepper slippage
 
+    // TODO: enforce this on server side, it's not client's decision!
+    // DELAY_BTW_COMMANDS: 100, // rest a moment between commands for steadier movement
+
     // The distance between the centers of the left and right pulleys
     DIST_BTW_PULLEYS: 106.25*MM_PER_IN,
 

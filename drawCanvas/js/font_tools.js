@@ -1,11 +1,8 @@
-var drawCoords = [];
-var DELAY_BTW_COMMANDS = 500; // this might help avoid abrupt movements (eg acute angles)
-
 var TextMgr = {
     x0: 100,
-    y0: 100,
+    y0: 250,
     text_to_draw: 'hi',
-    fontSize: 50,
+    fontSize: 150,
     ctx: undefined,
     path: undefined,
     FONT_PATH: 'fonts/candy_shop/Candy\ Shop\ Black.ttf',
@@ -31,6 +28,7 @@ function refreshFont() {
 refreshFont();
 // TODO: ahh!
 
+
 function showStroke() {
     // Show the stroke of the text in green, without drawing
     TextMgr.path.fill = null;
@@ -38,31 +36,62 @@ function showStroke() {
     TextMgr.path.draw(TextMgr.ctx);
 }
 
-function drawText() {
-    function drawLoop(drawIndex) {
-        if (drawIndex >= drawCoords.length) {
-            // break out of callback loop
-            console.log('exiting drawLoop');
-            return false;
-        }
-        var nextCoords = [drawCoords[drawIndex].x, drawCoords[drawIndex].y];
-        console.log('nextCoords (relative cartesian):');
-        console.log(nextCoords);
-        drawStraightLine(nextCoords[0], nextCoords[1], function(){
-            setTimeout(function(){
-                drawLoop(drawIndex+1);
-            }, DELAY_BTW_COMMANDS);
-        });
-    }
-
+// TODO: OLD, DELETE
+function drawTextRough() {
     var cmds = TextMgr.path.commands;
+    var points = [];
     // add all valid command coordinates (exclude the last cmd) to drawCoords
-    for (i = 0; i < cmds.length; i++) {
+    for (var i = 0; i < cmds.length; i++) {
         if (cmds[i].type != 'Z') {
-            drawCoords.push({'x':cmds[i].x, 'y':cmds[i].y});
+            points.push({'x':cmds[i].x, 'y':cmds[i].y});
         }
     }
+    // call simple_bezier function
+    drawPoints(points);
+}
 
-    // Start drawLoop callback cycle
-    drawLoop(0);
+function drawSVG(cmds) {
+    var points = [];
+    // XXX: the whole point of prev is to have a default prev (x,y) -- beziers & lines don't have x0,y0.
+    // This shouldn't come into play, unless a command is missing, which is possible!
+    var prev = {x:0, y:0}; // TODO: this should really use the current position of the plotbot!!! TODO!!
+    var subPoints;
+
+    // add all valid command coordinates (exclude the 'Z' cmd) to the points array
+    for (var i = 0; i < cmds.length; i++) {
+        if (cmds[i].type === 'M' || cmds[i].type === 'L') {
+            // 'M' is move, 'L is straight line'
+            // since the bot can't lift the pen, they're the same.
+            // points.push({'x':cmds[i].x, 'y':cmds[i].y});
+            points.push({x: cmds[i].x, y: cmds[i].y});
+            // update the previous point
+            prev = {x: cmds[i].x, y: cmds[i].y};
+        } else if (cmds[i].type === 'Q' || cmds[i].type === 'C') {
+            // 'Q' and 'C' are Quadratic or Cubic Bezier curve commands, respectively.
+            //
+            // Leave it up to sObjSubsection to determine if it's Quadratic or Cubic,
+            // and to determine the number of subsections.
+            //
+            // Set the x0 and y0 with previous point, they aren't contained in the command.
+            cmds[i].x0 = prev.x;
+            cmds[i].y0 = prev.y;
+            // Push the elements of the resulting array of points to the points array
+            subPoints = sObjSubsection(cmds[i]).points;
+            points = points.concat(subPoints); // TODO: this is slow op
+
+            // update the previous point using the points array
+            prev = {
+                x: (points[points.length-1].x),
+                y: (points[points.length-1].y),
+            };
+        }
+    }
+    // call simple_bezier function
+    drawPoints(points);
+    console.log('points: ', points);
+}
+
+// Just a simple wrapper now
+function drawText() {
+    drawSVG(TextMgr.path.commands.slice());
 }

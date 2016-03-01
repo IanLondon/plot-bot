@@ -46,7 +46,7 @@ if (DEBUG) {
     });
 
     // monkey patch Stepper.step so that callbacks work in mock mode
-    var STEPPER_MOCK_DELAY = 250;
+    var STEPPER_MOCK_DELAY = 10;
     five.Stepper.prototype.step = function(steps, callback) {
         setTimeout(callback, STEPPER_MOCK_DELAY);
     };
@@ -118,6 +118,7 @@ board.on("ready", function() {
             if (stepsVal === 0) {
                 // skip ahead. 0 steps isn't an error, necessarily
                 console.log('Zero stepsVal, for stepper "' + stepperObj.name + '", skipping.');
+                doneSteppingCallback(); //XXX: this is new, is it trouble???
                 return false;
             }
 

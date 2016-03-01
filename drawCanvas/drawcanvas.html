@@ -12,9 +12,14 @@
     <script src="js/robotDrawModel.js"></script>
     <!-- Font and font test -->
     <script src="bower_components/opentype.js/dist/opentype.js"></script>
-    <!-- <script src="/bezier.js"></script> -->
     <script src="js/simple_bezier.js"></script>
     <script src="js/font_tools.js"></script>
-    <!-- <script>drawText('yo', 200,200, 100);</script> -->
+
+    <script>
+        drawSVG([
+            {type:'M',x:14,y:18},
+            {type:'C',x:23,y:89,x1:95,y1:76,x2:61,y2:21},
+        ]);
+    </script>
   </body>
 </html>
