@@ -34,6 +34,37 @@ The client also has to remember to scale the "true" relative Cartesian coordinat
 
 ***
 
+# SVG
+
+SVG files are XML, and we only care about the `<path d="SVG commands section">`
+
+Watch out for transform() and translate() commands in the SVG `<g>` parents of a `<path>`! This can happen when you move a group around in Inkscape. Don't manipulate groups. Only manipulate points.
+
+***Stipplegen can give crazy page sizes & shapes... why?***
+
+Evil Mad Scientist's [Stipplegen](http://wiki.evilmadscientist.com/Stipplegen) outputs Traveling Salesman Problem (TSP) drawing path which is all straight lines: the SVG path is of the form
+
+    M
+    x0 y0
+    x1 y1
+    ...
+    x_last y_last
+
+with no commas, just newlines and spaces.
+
+In contrast, an Inkscape pen tool drawing has a bunch of different commands, including Beziers and possible other things like ellipses. A very simple path might look like this (no newlines, uses commas and spaces)
+
+```
+"m 97.142857,138.07647 c 0,0 262.857143,-57.142859 265.714283,128.57143 2.85715,185.71428 120,-102.85715 120,-102.85715"
+```
+
+[svg-path-parser](https://github.com/hughsk/svg-path-parser) parses commands like `c 0,0 22,22` nicely.
+
+You can force Inkscape to output only absolute paths by going to `File->Inkscape Preferences->SVG output` and un-checking the box next to `Allow relative coordinates`.
+
+
+***
+
 # TODO
 * ~~Backup the old files just to be safe, then delete all the commented out old code~~
 * ~~Move all the bipolar coordinate functions in robotDrawModel.js to server.js and/or plotbot.js -- the client/canvas should only keep track of cartesian coordinates for now~~
@@ -48,3 +79,19 @@ The client also has to remember to scale the "true" relative Cartesian coordinat
 * When you send a 'line' event to the server while the robot is already moving, it interrupts the movement and (the client, at least) loses track of its position. Don't let the client do that. ??? Deny overlapping requests and have the client requeue itself. ???
 * A long `drawStraightLine` will let the line curve following bipolar space. If you manually chunk it into smaller segments, the drawn line will be straighter. Make drawStraightLine do this automatically using a plotbot.js-defined Plotbot.MAX_SEGMENT_LENGTH property. (Maybe rename drawStraightLine to moveRobotTo or something, and call moveRobot for each line segment, from a new fn called drawStraightLine)
 * Make some kind of script to automate https://github.com/hughsk/svg-path-parser install and browserify workflow. For now, just include the browserify-bundled file in your repo...
+
+## SVG TODO
+* For now, I can do:
+
+```
+// drawSVG looks for .type, but svg-path-parser uses .command, they're the same so just convert the name
+smiley_cmds = parse_svg(svg_smiley).map(function(o){o.type = o.code; return o;})
+
+drawSVG(smiley_cmds)
+```
+
+* A function should open up a file dialog and open a .svg file. Then, extract the `<path>`'s `d` attribute and send that to the parser. -- possibly [xml2js](https://www.npmjs.com/package/xml2js) or possibly [js-xpath](https://github.com/dimagi/js-xpath) - you just need something simple. **You could even cheat with native JS `RegExp` if you want, though it's probably less robust...**
+
+* As soon as you have a parsed SVG array, **check for unsupported commands** and stop with an explicit error if the command isn't supported
+
+* A function should evaluate an SVG and **determine the bounding box before trying to draw it**. With beziers in the mix, calculating the bounding box is non-trivial -- but you can **convert it to a series of points** before drawing it with the functions you already have!
