@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/IanLondon/plot-bot",
   "dependencies": {
+    "bezier-js": "^1.7.3",
     "express": "^4.13.4",
     "johnny-five": "^0.9.19",
     "socket.io": "^1.4.5"

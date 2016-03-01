@@ -13,8 +13,8 @@ lib-cov
 # Coverage directory used by tools like istanbul
 coverage
 
-# Bower components in drawCanvas
-bower_components
+# Bower components (in drawCanvas)
+bower_components/
 
 # Browse-IO directory
 browse-io
