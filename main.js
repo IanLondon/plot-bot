@@ -7,3 +7,5 @@ var parse_svg = require('svg-path-parser');
 window.parse_svg = parse_svg;
 window.xml2js = xml2js;
 window.xpath = xpath;
+
+//TODO: incorporate all the JS scripts into this file
