@@ -85,12 +85,25 @@ You can force Inkscape to output only absolute paths by going to `File->Inkscape
 
 ```
 // drawSVG looks for .type, but svg-path-parser uses .command, they're the same so just convert the name
+
 smiley_cmds = parse_svg(svg_smiley).map(function(o){o.type = o.code; return o;})
 
 drawSVG(smiley_cmds)
 ```
 
-* A function should open up a file dialog and open a .svg file. Then, extract the `<path>`'s `d` attribute and send that to the parser. -- possibly [xml2js](https://www.npmjs.com/package/xml2js) or possibly [js-xpath](https://github.com/dimagi/js-xpath) - you just need something simple. **You could even cheat with native JS `RegExp` if you want, though it's probably less robust...**
+* ~~A function should open up a file dialog and open a .svg file. Then, extract the `<path>`'s `d` attribute and send that to the parser. -- [xml2js](https://www.npmjs.com/package/xml2js) and [xml2js-xpath](https://www.npmjs.com/package/xml2js-xpath).~~
+
+* ^ `getSVGPathFromText` does this, but xpath uses a callback so I can't return it. I guess everything can use callbacks... so then the initial call will look like:
+
+```
+getSVGPathFromText(contents, function(commands){
+    checkSVGCommands(commands, function(good_commands){
+        checkBoundingBox(good_commands, function(bounded_commands) {
+            finallyDrawTheThingOMG(bounded_commands);
+        })
+    })
+});
+```
 
 * As soon as you have a parsed SVG array, **check for unsupported commands** and stop with an explicit error if the command isn't supported
 

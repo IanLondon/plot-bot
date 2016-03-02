@@ -7,12 +7,46 @@
   </head>
   <body>
     <canvas id="canvas1" width="800", height="400"></canvas>
+
+    <!--http://www.htmlgoodies.com/beyond/javascript/read-text-files-using-the-javascript-filereader.html-->
+    <input type="file" id="fileinput" />
+    <script type="text/javascript">
+      function drawSVGFromFile(evt) {
+        //Retrieve the first (and only!) File from the FileList object
+        var f = evt.target.files[0];
+
+        if (f) {
+          var r = new FileReader();
+          r.onload = function(e) {
+    	      var contents = e.target.result;
+            console.log("Got the file.\n"
+                  +"name: " + f.name + "\n"
+                  +"type: " + f.type + "\n"
+                  +"size: " + f.size + " bytes\n"
+                  + "starts with: " + contents.substr(1, contents.indexOf("\n"))
+            );
+            if(f.type !== 'image/svg+xml') {
+                console.warn("DEBUG: filetype doesn't seem to be 'image/svg+xml'. Trying anyway!");
+            }
+            getSVGPathFromText(contents);
+            console.warn('TODO: make the callback pyramid here');
+          }
+          r.readAsText(f);
+        } else {
+          alert("Failed to load file");
+        }
+      }
+
+      document.getElementById('fileinput').addEventListener('change', drawSVGFromFile, false);
+    </script>
+    <!--  -->
+
     <script src="bower_components/lodash/lodash.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/robotDrawModel.js"></script>
     <!-- Font and font test -->
     <script src="bower_components/opentype.js/dist/opentype.js"></script>
-    <script src="js/svg_parse_bundle.js"></script>
+    <script src="js/browserify_bundle.js"></script>
     <script src="js/simple_bezier.js"></script>
     <script src="js/font_tools.js"></script>
     <script src="js/svg_tools.js"></script>

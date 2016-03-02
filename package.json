@@ -30,6 +30,8 @@
     "express": "^4.13.4",
     "johnny-five": "^0.9.19",
     "socket.io": "^1.4.5",
-    "svg-path-parser": "^1.0.1"
+    "svg-path-parser": "^1.0.1",
+    "xml2js": "^0.4.16",
+    "xml2js-xpath": "^0.6.0"
   }
 }
