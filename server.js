@@ -7,13 +7,13 @@ var five = require("johnny-five");
 var plotbot = require("./plotbot.js");
 
 // TODO: rearrange directory structure to make "public" folder
-app.use(express.static('drawCanvas'));
+app.use(express.static('static'));
 // Nope, this gets you in trouble! Use the minified compiled version
 // app.use(express.static('node_modules/bezier-js/lib'));
 
-app.get('/', function(req, res){
-  res.sendFile(path.join(__dirname, './drawCanvas/drawcanvas.html'));
-});
+// app.get('/', function(req, res){
+//   res.sendFile(path.join(__dirname, './drawCanvas/drawcanvas.html'));
+// });
 
 // app.get('/bezier.js', function(req, res){
 //     // This might be a bad way to serve it, I don't know, but w/e it works

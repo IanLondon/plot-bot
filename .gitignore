@@ -13,7 +13,7 @@ lib-cov
 # Coverage directory used by tools like istanbul
 coverage
 
-# Bower components (in drawCanvas)
+# Bower components (in static/)
 bower_components/
 
 # Browse-IO directory
@@ -33,7 +33,7 @@ build/Release
 node_modules
 
 # SVGs. Maybe I'll include some examples later, but now it's changing too often.
-drawCanvas/svg
+static/svg
 
-# Browserify bundle 
-bundle.js
+# Browserify bundle
+static/js/bundle.js
