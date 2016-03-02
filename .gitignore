@@ -31,3 +31,6 @@ build/Release
 # Dependency directory
 # https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git
 node_modules
+
+# SVGs. Maybe I'll include some examples later, but now it's changing too often.
+drawCanvas/svg
