@@ -81,19 +81,17 @@ You can force Inkscape to output only absolute paths by going to `File->Inkscape
 * Make some kind of script to automate https://github.com/hughsk/svg-path-parser install and browserify workflow. For now, just include the browserify-bundled file in your repo...
 
 ## SVG TODO
-* For now, I can do:
+* After the browserify refactor:
 
 ```
-// drawSVG looks for .type, but svg-path-parser uses .command, they're the same so just convert the name
-
-smiley_cmds = parse_svg(svg_smiley).map(function(o){o.type = o.code; return o;})
-
-drawSVG(smiley_cmds)
+// drawSVG looks for .type, but svg-path-parser uses .command,
+// they're the same so just convert the name
+cmds = inject.parse_svg(svgInject.svg_cmd_text).map(function(o){o.type = o.code; return o;});
+inject.svg_tools.drawSVG(cmds)
 ```
-
 * ~~A function should open up a file dialog and open a .svg file. Then, extract the `<path>`'s `d` attribute and send that to the parser. -- [xml2js](https://www.npmjs.com/package/xml2js) and [xml2js-xpath](https://www.npmjs.com/package/xml2js-xpath).~~
 
-* ^ `getSVGPathFromText` does this, but xpath uses a callback so I can't return it. I guess everything can use callbacks... so then the initial call will look like:
+* ^ `getSVGPathFromText` does this, ~~but xpath uses a callback so I can't return it. I guess everything can use callbacks... so then the initial call will look like:~~
 
 ```
 getSVGPathFromText(contents, function(commands){
@@ -104,6 +102,8 @@ getSVGPathFromText(contents, function(commands){
     })
 });
 ```
+
+## **^^^No, just do all the functions in order. You don't need to return anything at the end!**
 
 * As soon as you have a parsed SVG array, **check for unsupported commands** and stop with an explicit error if the command isn't supported
 

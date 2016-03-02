@@ -3,6 +3,8 @@ A v-plotter / Polargraph-type drawing robot actuated with johnny-five and with s
 
 ![Plot bot design](img/plot-bot-core.jpg)
 
+# **!!! This readme needs a lot of work after the browserify refactor and many new features!**
+
 `drawCanvas/drawcanvas.html` now shows an example of using the `opentype.js` module to simulate drawing the outline of arbitrary text in a solid TrueType font (see `drawCanvas/fontTest.js`).
 
 You can draw straight lines by clicking and dragging on the canvas (line will start on mousedown and ends on mouseup), or by entering commands in the console like:
@@ -15,6 +17,7 @@ You can draw straight lines by clicking and dragging on the canvas (line will st
 Install node and npm. Then do:
 
     npm install
+    browserify main.js -o static/js/bundle.js
     node server.js
 
 Use mock-firmata to fake a Board by running in debug mode:
