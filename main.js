@@ -5,8 +5,6 @@ var font_tools = require('./lib/font_tools.js');
 var canvas_model = require('./lib/canvas_model.js');
 var svg_tools = require('./lib/svg_tools.js');
 
-console.log('hello from browserify');
-
 // TODO: the settings should be populated & changed by the interface
 app_settings = {
     autoscale: true, // scale SVGs to fill the canvas, preserving aspect ratio

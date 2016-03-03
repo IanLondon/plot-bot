@@ -8,7 +8,7 @@ The motors are commanded by # steps, so you can only communicate bipolar stepDel
 
 The drawing area might vary from drawing to drawing. Eg, we might want only a 8.5"x11" piece of paper taped to the whiteboard to be drawn on. For simplicity, it should be defined as a rectangle with the base parallel to the imaginary line between the left and right pulleys (no funny shapes supported!).
 
-There is no margin in the computed drawing area. The edges will be rough because the bipolar coordinates give you jagged edges. So if you want to allow a margin, just make your drawing area _smaller_ than your paper/whiteboard/etc.
+~~There is no margin in the computed drawing area. The edges will be rough because the bipolar coordinates give you jagged edges. So if you want to allow a margin, just make your drawing area _smaller_ than your paper/whiteboard/etc.~~
 
 The starting position won't always be at the "origin" - the origin might not even be accessible in the bounds of the currently defined drawing area! I guess we could define the origin where the cursor is exactly at the top left pulley: the left string is fully retracted, and the length of the right string equals the distance between the pulleys. IRL the gondola would smash into the left pulley in this position! The origin is just a theoretical place, not one you actually bring the drawing tool to.
 
@@ -103,7 +103,7 @@ getSVGPathFromText(contents, function(commands){
 });
 ```
 
-## **^^^No, just do all the functions in order. You don't need to return anything at the end!**
+~~**^^^No, just do all the functions in order. You don't need to return anything at the end!**~~
 
 * ~~As soon as you have a parsed SVG array, **check for unsupported commands** and stop with an explicit error if the command isn't supported~~
 
@@ -111,10 +111,15 @@ getSVGPathFromText(contents, function(commands){
 
 ## SVG IMPORTS WORK! What's next?
 
-* Convert relative paths to absolute (there's gotta be a library)
-
-* What SVG path commands am I missing?
-
 * Implement GUI to change the app_settings (currently)
-
+* GUI to change Plotbot settings (eg drawing area size/pos, initial string length)
+* Convert relative paths to absolute (it's not too hard. See http://www.sitepoint.com/closer-look-svg-path-data/ to understand what "relative" refers to)
+* What SVG path commands am I missing? Which of those do you get with the pen tool?
+* **Draw the eye on the board! Use a tablecloth or something to protect the wall and floor from wandering markers, just in case.**
+* **Start a static blog to explain how to build and operate the robot, and the build process!**
+* **Measure strings lengths across stepping range** and figure out if it's constant or not. What is causing the remaining distortion?
+* Pause/play button (on the client side, prevent new file load & prevent clicking to draw when actively drawing)
 * Quick preview (without moving the bot, without slowly tracing - use the <canvas>'s build-in SVG stuff?)
+* Alternative cross-hatching, etc
+* Be able to click many times and let the robot catch up to you. (Right now it interrupts & confuses the server!)
+* Support multiple `<path>`s? Are they in any kind of order?
