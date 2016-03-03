@@ -111,15 +111,21 @@ getSVGPathFromText(contents, function(commands){
 
 ## SVG IMPORTS WORK! What's next?
 
+* **Draw the eye SVG on the board! Use a tablecloth or something to protect the wall and floor from wandering markers, just in case.**
 * Implement GUI to change the app_settings (currently)
 * GUI to change Plotbot settings (eg drawing area size/pos, initial string length)
-* Convert relative paths to absolute (it's not too hard. See http://www.sitepoint.com/closer-look-svg-path-data/ to understand what "relative" refers to)
-* What SVG path commands am I missing? Which of those do you get with the pen tool?
-* **Draw the eye on the board! Use a tablecloth or something to protect the wall and floor from wandering markers, just in case.**
-* **Start a static blog to explain how to build and operate the robot, and the build process!**
+* Try connecting with smartphone and using touchscreen to draw!
 * **Measure strings lengths across stepping range** and figure out if it's constant or not. What is causing the remaining distortion?
+* Convert relative paths to absolute (it's not too hard. See http://www.sitepoint.com/closer-look-svg-path-data/ to understand what "relative" refers to)
+* While it's nice that `opentype` outputs an array of command objects, they don't have all the info that `svg-path-parser` provides. Rewrite the SVG command functions to be `svg-path-parser` native, and for type, use `opentype`'s SVG string functionality (then send that string to `svg-path-parser`).
+* What SVG path commands am I missing? Which of those do you get with the pen tool?
+* **Start a static blog to explain how to build and operate the robot, and the build process!**
 * Pause/play button (on the client side, prevent new file load & prevent clicking to draw when actively drawing)
+* Convenient interface to tell you where to place the marker (string length coordinates) for the first point on the list of points. Eg for smiley, it starts near the bottom. The current model makes you set the start point in plotbot.js settings, and you'd have to go in and calculate the first point yourself. Alternatively: position the gondola at the default origin point, b/c it's more convenient to always start at the same point across drawings. Then the browser app tells you to cap the marker, it moves the marker to the first point, and tells you to uncap the marker. Boom!
 * Quick preview (without moving the bot, without slowly tracing - use the <canvas>'s build-in SVG stuff?)
 * Alternative cross-hatching, etc
 * Be able to click many times and let the robot catch up to you. (Right now it interrupts & confuses the server!)
 * Support multiple `<path>`s? Are they in any kind of order?
+* Add GUI tools for text
+* Time elapsed
+* Time estimate with given settings (and other fun stats used in deriving that, eg total path length)

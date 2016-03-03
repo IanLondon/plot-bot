@@ -4,7 +4,7 @@ var http = require('http').Server(app);
 var path = require('path');
 var io = require('socket.io')(http);
 var five = require("johnny-five");
-var plotbot = require("./plotbot.js");
+var plotbot = require("./lib/plotbot.js");
 
 // TODO: rearrange directory structure to make "public" folder
 app.use(express.static('static'));
