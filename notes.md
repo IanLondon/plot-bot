@@ -80,7 +80,7 @@ You can force Inkscape to output only absolute paths by going to `File->Inkscape
 * A long `drawStraightLine` will let the line curve following bipolar space. If you manually chunk it into smaller segments, the drawn line will be straighter. Make drawStraightLine do this automatically using a plotbot.js-defined Plotbot.MAX_SEGMENT_LENGTH property. (Maybe rename drawStraightLine to moveRobotTo or something, and call moveRobot for each line segment, from a new fn called drawStraightLine)
 * Make some kind of script to automate https://github.com/hughsk/svg-path-parser install and browserify workflow. For now, just include the browserify-bundled file in your repo...
 
-## SVG TODO
+## ~~SVG TODO~~
 * After the browserify refactor:
 
 ```
@@ -105,6 +105,16 @@ getSVGPathFromText(contents, function(commands){
 
 ## **^^^No, just do all the functions in order. You don't need to return anything at the end!**
 
-* As soon as you have a parsed SVG array, **check for unsupported commands** and stop with an explicit error if the command isn't supported
+* ~~As soon as you have a parsed SVG array, **check for unsupported commands** and stop with an explicit error if the command isn't supported~~
 
-* A function should evaluate an SVG and **determine the bounding box before trying to draw it**. With beziers in the mix, calculating the bounding box is non-trivial -- but you can **convert it to a series of points** before drawing it with the functions you already have!
+* ~~A function should evaluate an SVG and **determine the bounding box before trying to draw it**. With beziers in the mix, calculating the bounding box is non-trivial -- but you can **convert it to a series of points** before drawing it with the functions you already have!~~
+
+## SVG IMPORTS WORK! What's next?
+
+* Convert relative paths to absolute (there's gotta be a library)
+
+* What SVG path commands am I missing?
+
+* Implement GUI to change the app_settings (currently)
+
+* Quick preview (without moving the bot, without slowly tracing - use the <canvas>'s build-in SVG stuff?)
