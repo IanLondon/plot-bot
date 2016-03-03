@@ -1,8 +1,9 @@
 # plot-bot
 A v-plotter / Polargraph-type drawing robot actuated with johnny-five and with simulation tools using HTML5 &lt;canvas>
 
-Check out the plot-bot in action on YouTube:
-[![Video of plot-bot in action](http://img.youtube.com/vi/HxJ4MiYmpyA/0.jpg)](https://youtu.be/HxJ4MiYmpyA)
+[Video of plot-bot in action on YouTube:](https://youtu.be/HxJ4MiYmpyA)
+
+![Video of plot-bot in action](http://img.youtube.com/vi/HxJ4MiYmpyA/0.jpg)
 
 Drawing on a whiteboard:
 ![smiley face drawing](img/smiley1.jpg)
